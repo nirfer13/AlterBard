@@ -6,8 +6,6 @@ import datetime
 import sys
 sys.path.insert(1, './functions/')
 
-
-
 # general bag for commands that does not fit anywhere else
 
 class general(commands.Cog, name="general"):

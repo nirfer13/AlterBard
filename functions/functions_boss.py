@@ -3,23 +3,23 @@ import discord
 import asyncio
 import random
 import json
+import os
 
 from datetime import datetime, timedelta
 
 import time
 import datetime
 
-# general bag for functions
-global DebugMode
-DebugMode = False
+#Import Globals
+from globals.globalvariables import DebugMode
 
 class functions_boss(commands.Cog, name="functions_boss"):
     def __init__(self, bot):
         self.bot = bot
 
-    #define Loot -> move to function?
+    #define Loot
     global randLoot
-    def randLoot(srarity):
+    async def randLoot(self, ctx, srarity):
         rarity = int(srarity)
 
         with open("lootConfig.json", encoding='utf-8') as jsonFile:
@@ -49,12 +49,18 @@ class functions_boss(commands.Cog, name="functions_boss"):
 
         global dropLoot
         dropLoot = random.choices(lootDescrList, lootWeightList)
+        weight= lootWeightList[lootDescrList.index(str(dropLoot[0]))]
+        print("Chosen weight: " + str(weight))
                 
         #Embed create   
         embed=discord.Embed(title='Boss Drop', url='https://www.altermmo.pl/wp-content/uploads/altermmo-2-112.png', description='Boss wydropił:\n👉 ' + str(dropLoot[0]), color=0xfcdb03)
         embed.set_thumbnail(url='https://www.altermmo.pl/wp-content/uploads/altermmo-2-112.png')
         embed.set_footer(text='Gratulacje!')
-        return embed, dropLoot    
+        await ctx.channel.send(embed=embed)
+
+        if weight < 2:
+            await ctx.channel.send("<:pogu:882182966372106280> @here patrzcie! To dopiero rzadki loot! <:pogu:882182966372106280>")
+        return dropLoot
 
     #function to send boss image
     global fBossImage
@@ -123,11 +129,11 @@ class functions_boss(commands.Cog, name="functions_boss"):
         iTime = int(time)
         print("Time inside function: " + str(iTime))
         if DebugMode == False:
-            if iTime >= 0 and iTime < 43200:
+            if iTime >= 0 and iTime < 21600:
                 bossRarity = 0
-            elif iTime >= 43200 and iTime < 75600:
+            elif iTime >= 21600 and iTime < 37800:
                 bossRarity = 1
-            elif iTime >= 75600 and iTime <= 90000:
+            elif iTime >= 37800 and iTime <= 45000:
                 bossRarity = 2
             else:
                 bossRarity = 0 
@@ -198,6 +204,29 @@ class functions_boss(commands.Cog, name="functions_boss"):
         msg = await channel.fetch_message(messageID)
         ctx = await self.bot.get_context(msg)
         return ctx
+
+    #function to add Boss Slayer role
+    global setBossSlayer
+    async def setBossSlayer(self, ctx, userID):
+        my_role = discord.utils.get(ctx.guild.roles, id=983798433590673448)
+        members = my_role.members
+        if members:
+            print(members)
+            for member in members:
+                 await member.remove_roles(my_role)
+        print("Boss slayer role removed.")
+        guild = self.bot.get_guild(686137998177206281)
+        user = guild.get_member(int(userID))
+        await user.add_roles(my_role)
+        print("Boss slayer role granted.")
+
+    #function to add random gif for Boss Slayer
+    global flexGif
+    async def flexGif(self, ctx):
+        print("Random flex gif selecting.")
+        gif = "flexgifs/" + random.choice(os.listdir("flexgifs/"))
+        await ctx.channel.send(file=discord.File(gif))
+          
 
 def setup(bot):
     bot.add_cog(functions_boss(bot))

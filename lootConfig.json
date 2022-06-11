@@ -3,33 +3,33 @@
 	"loot_details_Normal": [
 	{
 		"id": 0,
-		"descr": "250 doświadczenia na Discordzie",
+		"descr": "125 doświadczenia na Discordzie",
 		"weight": 80
 	},
 	{
 		"id": 1,
-		"descr": "500 doświadczenia na Discordzie",
+		"descr": "250 doświadczenia na Discordzie",
 		"weight": 30
 	},
 	{
 		"id": 2,
-		"descr": "1000 doświadczenia na Discordzie",
+		"descr": "500 doświadczenia na Discordzie",
 		"weight": 15
 	},
 	{
 		"id": 3,
-		"descr": "5000 doświadczenia na Discordzie",
+		"descr": "2500 doświadczenia na Discordzie",
 		"weight": 4
 	},
 	{
 		"id": 4,
 		"descr": "VIP na Twitchu lub 20000 doświadczenia na Discordzie",
-		"weight": 0.5
+		"weight": 0.25
 	},
 	{
 		"id": 5,
 		"descr": "Gra na steam do 150 złotych",
-		"weight": 0.1
+		"weight": 0.05
 	},
 	{
 		"id": 6,
@@ -39,18 +39,69 @@
 	{
 		"id": 7,
 		"descr": "Info na następnym filmie na YouTube o tym, jak heroicznie pokonałeś bossa",
-		"weight": 1
+		"weight": 0.5
 	},
 	{
 		"id": 8,
 		"descr": "Figa z makiem",
-		"weight": 10
+		"weight": 5
 	}
 	],"loot_details_Rare": [
 	{
 		"id": 0,
-		"descr": "250 doświadczenia na Discordzie",
+		"descr": "125 doświadczenia na Discordzie",
 		"weight": 1
+	},
+	{
+		"id": 1,
+		"descr": "250 doświadczenia na Discordzie",
+		"weight": 15
+	},
+	{
+		"id": 2,
+		"descr": "500 doświadczenia na Discordzie",
+		"weight": 60
+	},
+	{
+		"id": 3,
+		"descr": "2500 doświadczenia na Discordzie",
+		"weight": 12
+	},
+	{
+		"id": 4,
+		"descr": "VIP na Twitchu lub 20000 doświadczenia na Discordzie",
+		"weight": 0.75
+	},
+	{
+		"id": 5,
+		"descr": "Gra na steam do 150 złotych",
+		"weight": 0.15
+	},
+	{
+		"id": 6,
+		"descr": "2h testowania na Twitchu wybranej przez Ciebie gry",
+		"weight": 0.75
+	},
+	{
+		"id": 7,
+		"descr": "Info na następnym filmie na YouTube o tym, jak heroicznie pokonałeś bossa",
+		"weight": 1.5
+	},
+	{
+		"id": 8,
+		"descr": "Ukradnij wybranemu użytkownikowi 2500 doświadczenia na Discordzie",
+		"weight": 5
+	},
+	{
+		"id": 9,
+		"descr": "Wybierz playlistę na następnego streama, na którym muzyka z gry nie będzie potrzebna",
+		"weight": 1.5
+	}
+	],"loot_details_Epic": [
+	{
+		"id": 0,
+		"descr": "250 doświadczenia na Discordzie",
+		"weight": 0.1
 	},
 	{
 		"id": 1,
@@ -59,13 +110,13 @@
 	},
 	{
 		"id": 2,
-		"descr": "1000 doświadczenia na Discordzie",
-		"weight": 60
+		"descr": "1250 doświadczenia na Discordzie",
+		"weight": 45
 	},
 	{
 		"id": 3,
-		"descr": "5000 doświadczenia na Discordzie",
-		"weight": 12
+		"descr": "2500 doświadczenia na Discordzie",
+		"weight": 50
 	},
 	{
 		"id": 4,
@@ -89,54 +140,13 @@
 	},
 	{
 		"id": 8,
-		"descr": "Figa z makiem",
-		"weight": 10
-	}
-	],"loot_details_Epic": [
-	{
-		"id": 0,
-		"descr": "500 doświadczenia na Discordzie",
-		"weight": 0.1
+		"descr": "Stwórz własną rangę i ustal kolor oraz emotkę",
+		"weight": 1.5
 	},
 	{
-		"id": 1,
-		"descr": "1000 doświadczenia na Discordzie",
-		"weight": 30
-	},
-	{
-		"id": 2,
-		"descr": "2500 doświadczenia na Discordzie",
-		"weight": 45
-	},
-	{
-		"id": 3,
-		"descr": "5000 doświadczenia na Discordzie",
-		"weight": 50
-	},
-	{
-		"id": 4,
-		"descr": "VIP na Twitchu lub 20000 doświadczenia na Discordzie",
-		"weight": 3
-	},
-	{
-		"id": 5,
-		"descr": "Gra na steam do 150 złotych",
-		"weight": 0.6
-	},
-	{
-		"id": 6,
-		"descr": "2h testowania na Twitchu wybranej przez Ciebie gry",
-		"weight": 3
-	},
-	{
-		"id": 7,
-		"descr": "Info na następnym filmie na YouTube o tym, jak heroicznie pokonałeś bossa",
-		"weight": 6
-	},
-	{
-		"id": 8,
-		"descr": "Stwórz własną rangę i ustal kolor",
-		"weight": 3
+		"id": 9,
+		"descr": "Wybierz playlistę na następnego streama, na którym muzyka z gry nie będzie potrzebna",
+		"weight": 1.5
 	}
 	]	
 }

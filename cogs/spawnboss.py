@@ -1,7 +1,7 @@
 from logging import DEBUG
 from discord import channel
 from discord.errors import ClientException
-from discord.ext import commands
+from discord.ext import commands, tasks
 from datetime import datetime, timedelta
 
 import discord
@@ -22,9 +22,8 @@ import functions_general
 import functions_boss
 import functions_database
 
-#Debug Mode?
-global DebugMode
-DebugMode = False
+#Import Globals
+from globals.globalvariables import DebugMode
 
 #Respawn time
 global respTime
@@ -38,25 +37,29 @@ bossAlive = 0
 global bossRarity
 bossRarity = 0
 
-
-
 class message(commands.Cog, name="spawnBoss"):
     def __init__(self, bot):
         self.bot = bot
+   
 
     @commands.Cog.listener()
     async def on_ready(self):
+        #Every week ranking check
 
         #Choose channel to spawn boss
         global ctx
         if DebugMode == True:
-            ctx = await functions_boss.getContext(self, 970571647226642442, 983094138641711154)
+            ctx = await functions_boss.getContext(self, 970571647226642442, 984860815842771024)
         else:
             ctx = await functions_boss.getContext(self, 970684202880204831, 970685713026801685)
 
         global bossAlive, bossRarity, respTime, respawnResume
         bossRar, respawnTime, respawnResume = await functions_database.readBossTable(self, ctx)
 
+        #Weekly ranking task create
+        self.task2 = self.bot.loop.create_task(self.msg1(ctx))
+
+        #Check if it is necessary to resume boss spawn
         print("Resume?: " + str(respawnResume))
         if respawnResume == True:
             bossAlive = 1
@@ -66,6 +69,22 @@ class message(commands.Cog, name="spawnBoss"):
             print("Task resuming...")
             self.task = self.bot.loop.create_task(self.spawn_task(ctx))
             print("Task resumed.")
+
+    #define every week task
+    # 7 days => 24 hour * 7 days = 168
+    async def msg1(self, ctx):
+        while True:
+            timestamp = (datetime.datetime.utcnow() + datetime.timedelta(hours=2))
+            if timestamp.strftime("%H:%M UTC %a") == "18:49 UTC Sat":
+                print('Weekly ranking summary!')
+                winnerID = await functions_database.readSummaryRankingTable(self, ctx)
+                print("Winner ID: " + str(winnerID))
+                await functions_boss.setBossSlayer(self, ctx, winnerID)
+                await functions_database.resetRankingTable(self)
+                await ctx.channel.send("<@&985071779787730944>! Ranking za tydzień polowań został zresetowany. Nowa rola <@&983798433590673448> została przydzielona <@" + str(winnerID) + ">! Gratulacje <:GigaChad:970665721321381958>")
+                return
+            # wait some time before another loop. Don't make it more than 60 sec or it will skip
+            await asyncio.sleep(30)
     
     #define Spawn BIG Boss task
     async def spawn_task(self, ctx):
@@ -79,8 +98,23 @@ class message(commands.Cog, name="spawnBoss"):
                print("Preparing to channel clear. bossAlive = 0")
                bossAlive = 1
                if DebugMode == False:
-                    await asyncio.sleep(300)
+                    respTime = random.randint(150,3600)*12
+                    #Save Resp to file
+                    bossRarity = functions_boss.fBossRarity(respTime)
+                    await functions_database.updateBossTable(self, ctx, bossRarity, respTime, True)
+
+                    print("Resp time: " + str(respTime))
+                    print("Boss Rarity: " + str(bossRarity))
+                    await asyncio.sleep(3600)
                else:
+                    respTime = random.randint(15,24)
+                    #Save Resp to database
+                    bossRarity = functions_boss.fBossRarity(respTime)
+                    print("Updating database...")
+                    await functions_database.updateBossTable(self, ctx, bossRarity, respTime, True)
+
+                    print("Resp time: " + str(respTime))
+                    print("Boss Rarity: " + str(bossRarity))
                     await asyncio.sleep(3)
             #=== Episode 1 - Waiting
             #New Spawn
@@ -91,23 +125,8 @@ class message(commands.Cog, name="spawnBoss"):
                    print("Channel cleared. bossAlive = 1")
                    await ctx.channel.send('Dookoła rozlega się cisza, jedynie wiatr wzbija w powietrze tumany kurzu...')
                    if DebugMode == False:
-                        respTime = random.randint(150,3600)*24
-                        #Save Resp to file
-                        bossRarity = functions_boss.fBossRarity(respTime)
-                        await functions_database.updateBossTable(self, ctx, bossRarity, respTime, True)
-
-                        print("Resp time: " + str(respTime))
-                        print("Boss Rarity: " + str(bossRarity))
                         await asyncio.sleep(respTime)  # time in second
                    else:
-                        respTime = random.randint(15,24)
-                        #Save Resp to database
-                        bossRarity = functions_boss.fBossRarity(respTime)
-                        print("Updating database...")
-                        await functions_database.updateBossTable(self, ctx, bossRarity, respTime, True)
-
-                        print("Resp time: " + str(respTime))
-                        print("Boss Rarity: " + str(bossRarity))
                         await asyncio.sleep(respTime)  # time in second
 
             #Resume Spawn
@@ -204,8 +223,6 @@ class message(commands.Cog, name="spawnBoss"):
                 print("Wylosowane HP bossa: " + str(bossHP))
                 iterator = 0
 
-
-
                 #Define check function
                 channel = ctx.channel
                 def check(ctx):
@@ -240,7 +257,7 @@ class message(commands.Cog, name="spawnBoss"):
                             if iterator >= bossHP:
                                 bossAlive = 0
                                 await ctx.channel.send('Brawo <@' + format(ctx.message.author.id) + '>! Pokonałeś bossa! <:POGGIES:790963160491753502><:POGGIES:790963160491753502><:POGGIES:790963160491753502>')
-                            
+
                                 #Time record
                                 endTime = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
                                 recordTime = endTime - startTime
@@ -253,13 +270,24 @@ class message(commands.Cog, name="spawnBoss"):
                                     logChannel = self.bot.get_channel(881090112576962560)
                                     await logChannel.send("<@291836779495948288>!   " + ctx.message.author.name + " otrzymał: 3000 expa za rekord")
                                     await functions_database.updateRecordTable(self, ctx, ctx.message.author.name, recordTurnTime)
+
+                                #Ranking - add points
+                                if bossRarity == 0:
+                                    points = 1
+                                elif bossRarity == 1:
+                                    points = 3
+                                elif bossRarity == 2:
+                                    points = 6
+                                else:
+                                    points = 1
+                                await functions_database.updateRankingTable(self, ctx, ctx.message.author.id, points)
                             
                                 #Spawn resume off
                                 await functions_database.updateBossTable(self, ctx, 0, 0, False)                         
                             
                                 #Randomize Loot
-                                emb, dropLoot = functions_boss.randLoot(bossRarity)
-                                await ctx.send(embed=emb) 
+                                dropLoot = await functions_boss.randLoot(self, ctx, bossRarity)                                
+
                                 #Send info about loot
                                 logChannel = self.bot.get_channel(881090112576962560)
                                 await logChannel.send("<@291836779495948288>!   " + ctx.message.author.name + " otrzymał: " + str(dropLoot[0]))
@@ -270,7 +298,6 @@ class message(commands.Cog, name="spawnBoss"):
                             await ctx.channel.send('Pomyliłeś się! <:PepeHands:783992337377918986> Boss pojawi się później! <:RIP:912797982917816341>')
                             logChannel = self.bot.get_channel(881090112576962560)
                             await  logChannel.send("<@291836779495948288>!   " + ctx.message.author.name + " pomylił się i nie zabił bossa.")
-                            #functions_boss.fSaveRespawnToFile(0, 0, False)
                             await functions_database.updateBossTable(self, ctx, 0, 0, False)
                             bossAlive = 0
                             break
@@ -279,13 +306,14 @@ class message(commands.Cog, name="spawnBoss"):
                         await ctx.channel.send('Niestety nie zdążyłeś! <:Bedge:970576892874854400> Boss pojawi się później! <:RIP:912797982917816341>')
                         logChannel = self.bot.get_channel(881090112576962560)
                         await  logChannel.send("<@291836779495948288>!   " + ctx.message.author.name + " nie zdążył wpisać komend i boss uciekł.")
-                        #functions_boss.fSaveRespawnToFile(0, 0, False)
                         await functions_database.updateBossTable(self, ctx, 0, 0, False)
                         bossAlive = 0
                         break
             else:
                 print("Boss is not alive or attacked!")
                 await ctx.channel.send('Nie możesz zaatakować bossa, poczekaj na pojawienie się kolejnego <@' + format(ctx.message.author.id) + '>!')
+
+
 
 
     # ==================================== COMMANDS FOR USERS =======================================================================
@@ -306,7 +334,38 @@ class message(commands.Cog, name="spawnBoss"):
             print ("History database read.")
             await ctx.channel.send('Poprzednio boss walczył z **' + Nick + '** i było to **' + fightTime + ' UTC+2**.')
 
+    @commands.command(name="ranking")
+    async def readRankingDatabase(self, ctx):
+        if ctx.channel.id == 970684202880204831 or ctx.channel.id == 970571647226642442:
+            await functions_database.readRankingTable(self, ctx)
+            print ("Ranking database read.")
+
+    # command to flex boss slayer
+    @commands.command(pass_context=True, name="flex", brief="Boss slayer flex")
+    @commands.cooldown(1, 1800, commands.BucketType.user)
+    async def flex(self, ctx):
+        my_role = discord.utils.get(ctx.guild.roles, id=983798433590673448)
+        print(str(type(ctx.message.author)))
+        if my_role in ctx.message.author.roles:
+            await functions_boss.flexGif(self, ctx)
+            await ctx.channel.send('Potężny <:GigaChad:970665721321381958> <@' + format(ctx.message.author.id) + '> napina swe sprężyste, naoliwione muskuły! Co za widok, robi wrażenie! <:pogu:882182966372106280>')
+        else:
+            await ctx.channel.send('<:KEKW:936907435921252363> **Miernota** <:2Head:882184634572627978>')
+
     # ==================================== COMMANDS FOR DEBUG =======================================================================
+
+    # command to debug
+    @commands.command(pass_context=True, name="bossslayer")
+    @commands.has_permissions(administrator=True)
+    async def bossSlayer(self, ctx, userID):
+        await functions_boss.setBossSlayer(self, ctx, userID)
+
+    # command to debug
+    @commands.command(pass_context=True, name="remind")
+    @commands.has_permissions(administrator=True)
+    async def remind(self, ctx):
+        Channel = self.bot.get_channel(970684202880204831)
+        await Channel.send("Potwór oczekuje na zabicie! Wpisz **#zaatakuj**, aby rozpocząć walkę! @here")
 
     # command to debug
     @commands.command(pass_context=True, name="rarity")
@@ -353,7 +412,7 @@ class message(commands.Cog, name="spawnBoss"):
     async def context(self, ctx):
         await functions_boss.getContext(self)
 
-    # ====== Boss Database Commands to Debug
+    # ==================================== COMMANDS FOR DATABASE =======================================================================
 
     @commands.command(name="updateDatabase")
     @commands.has_permissions(administrator=True)
@@ -370,22 +429,17 @@ class message(commands.Cog, name="spawnBoss"):
         await ctx.channel.send("Boss rarity: " + str(bossRar))
         await ctx.channel.send("Czas wskrzeszenia: " + str(respawnTime))
 
-    @commands.command(name="openDatabase")
+    @commands.command(name="createAllDatabases")
     @commands.has_permissions(administrator=True)
-    async def openDatabase(self):
-        functions_database.create_db_pool(self)
-        await ctx.channel.send("Połączenie z bazą otwarte.")
-
-    #TODO
-    @commands.command(name="closeDatabase")
-    @commands.has_permissions(administrator=True)
-    async def closeDatabase(self, ctx):
-        functions_database.closeTable(dbConnection)
-        await ctx.channel.send("Połączenie z bazą zamknięte.")
+    async def createAllDatabases(self, ctx):
+        await functions_database.createBossTable(self)
+        await functions_database.createRecordTable(self)
+        await functions_database.createHistoryTable(self)
+        await ctx.channel.send("Wszystkie bazy danych utworzone!")
 
     @commands.command(name="createBossDatabase")
     @commands.has_permissions(administrator=True)
-    async def createDatabase(self, ctx):
+    async def createBossDatabase(self, ctx):
         await functions_database.createBossTable(self)
         await ctx.channel.send("Baza danych utworzona.")
 
@@ -416,6 +470,26 @@ class message(commands.Cog, name="spawnBoss"):
     async def updateHistoryDatabase(self, ctx, Nick, fightTime):
         await functions_database.updateHistoryTable(self, ctx, Nick, fightTime)
         await ctx.channel.send("Baza danych z historią zaktualizowana.")
+
+    # ====== Ranking Database Commands to Debug
+
+    @commands.command(name="createRankingDatabase")
+    @commands.has_permissions(administrator=True)
+    async def createRankingDatabase(self, ctx):
+        await functions_database.createRankingTable(self)
+        await ctx.channel.send("Baza danych z rankingiem utworzona.")
+
+    @commands.command(name="resetRankingDatabase")
+    @commands.has_permissions(administrator=True)
+    async def resetRankingDatabase(self, ctx):
+        await functions_database.resetRankingTable(self)
+        await ctx.channel.send("Baza danych z rankingiem zresetowana.")
+
+    @commands.command(name="updateRankingDatabase")
+    @commands.has_permissions(administrator=True)
+    async def updateRankingDatabase(self, ctx, ID, points):
+        print("Starting command...")
+        await functions_database.updateRankingTable(self, ctx, ID, points)
         
 def setup(bot):
     bot.add_cog(message(bot))
