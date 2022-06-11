@@ -75,7 +75,7 @@ class message(commands.Cog, name="spawnBoss"):
     async def msg1(self, ctx):
         while True:
             timestamp = (datetime.datetime.utcnow() + datetime.timedelta(hours=2))
-            if timestamp.strftime("%H:%M UTC %a") == "18:49 UTC Sat":
+            if timestamp.strftime("%H:%M UTC %a") == "15:00 UTC Mon":
                 print('Weekly ranking summary!')
                 winnerID = await functions_database.readSummaryRankingTable(self, ctx)
                 print("Winner ID: " + str(winnerID))

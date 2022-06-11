@@ -14,3 +14,21 @@ Patch 0.3.0
 - Przeniesienie wszystkich historycznych danych do bazy danych,
 - Dodanie nowych komend podczas walki z bossem,
 - Poprawienie wznawianie respawnu po odłączeniu od hostingu
+
+Patch 0.3.1
+- Przeniesienie wszystkich historycznych danych do bazy danych,
+- Zmiana sposobu naliczania rekordu (średni czas na turę walki),
+- Dodanie nowych komend podczas walki z bossem,
+- Poprawienie wznawianie respawnu po odłączeniu od hostingu,
+- Możliwość wpisywania komend tylko na kanale leże-bossa.
+
+Patch 0.3.2
+- Na kanale #odblokuj-gre jest do zdobycia ranga @łowca potworów, która będzie pingowana w przypadku ważnych wydarzeń związanych z grą #leże-potworów.
+Pojawienie sie bossa nie będzie pingowało tej rangi!
+- Sezon rankingowy. Każdy sezon trwa tydzień i po tym czasie ten, kto zdobędzie najwięcej punktów (zwykły boss - 1 pkt, rzadki - 3, epicki - 6)
+otrzyma rangę @Rzeźnika potworów. Rzeźnik potworów z okazji otwarcia sezonu ma szansę w najbliższym losowaniu równą x10, ma dostęp do tajemniczej
+komendy #flex oraz dostęp do kanału #NSFW. Każdy sezon kończy się w poniedziałek o godzinie 15:00.
+- Dodanie komendy #ranking.
+- Spawn bossów jest dwukrotnie częstszy.
+- Rework dropa z bossa. Od tej pory rzadki i epicki boss nie tylko częściej dropi rzadsze nagrody, ale również posiada szansę na nagrody,
+które są niemożliwe przy pokonaniu zwykłego bossa. Nagroda w doświadczeniu została zredukowana.
