@@ -49,7 +49,7 @@ class message(commands.Cog, name="spawnBoss"):
         #Choose channel to spawn boss
         global ctx
         if DebugMode == True:
-            ctx = await functions_boss.getContext(self, 970571647226642442, 984860815842771024)
+            ctx = await functions_boss.getContext(self, 970571647226642442, 987439994685779988)
         else:
             ctx = await functions_boss.getContext(self, 970684202880204831, 987266673256046612)
 
