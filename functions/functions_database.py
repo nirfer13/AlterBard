@@ -254,7 +254,7 @@ class functions_database(commands.Cog, name="functions_database"):
         #Embed create   
         emb=discord.Embed(title='Ranking łowców potworów na koniec sezonu!', url='https://www.altermmo.pl/wp-content/uploads/SwordV2_Transparent-1.png', description=rankingString, color=0xFF0000)
         emb.set_thumbnail(url='https://www.altermmo.pl/wp-content/uploads/SwordV2_Transparent-1.png')
-        emb.set_footer(text='Ranga Rzeźnika potworów została przydzielona!')
+        emb.set_footer(text='Ranga Rzeźnika Potworów została przydzielona!')
         await ctx.send(embed=emb)
         try:
             winnerID = int(dbRankingRead[0][0])

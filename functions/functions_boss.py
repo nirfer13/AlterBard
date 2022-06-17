@@ -210,6 +210,7 @@ class functions_boss(commands.Cog, name="functions_boss"):
     async def setBossSlayer(self, ctx, userID):
         my_role = discord.utils.get(ctx.guild.roles, id=983798433590673448)
         members = my_role.members
+        print(my_role)
         if members:
             print(members)
             for member in members:
