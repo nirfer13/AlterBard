@@ -213,7 +213,7 @@ class message(commands.Cog, name="spawnBoss"):
 
                 try:
                     async with ctx.typing():
-                        anotherAtkCmd = await self.bot.wait_for('message', timeout=2)
+                        anotherAtkCmd = await self.bot.wait_for('message', timeout=5)
                     response = str(anotherAtkCmd.content)
                     print(response)
                     if response == "^zaatakuj":
