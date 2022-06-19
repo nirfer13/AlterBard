@@ -134,6 +134,7 @@ class message(commands.Cog, name="spawnBoss"):
             else:
                 if bossAlive == 1:
                    bossAlive = 2
+                   await functions_general.fClear(self, ctx)
                    print("Channel cleared. bossAlive = 1. Resuming.")
                    print("Resume resp time: " + str(respTime))
                    print("Resume boss Rarity: " + str(bossRarity))
@@ -216,7 +217,7 @@ class message(commands.Cog, name="spawnBoss"):
                         anotherAtkCmd = await self.bot.wait_for('message', timeout=5)
                     response = str(anotherAtkCmd.content)
                     print(response)
-                    if response == "^zaatakuj":
+                    if response == "#zaatakuj":
                         preFight = True
                         print("Prefight: " + str(preFight))
                         async with ctx.typing():
