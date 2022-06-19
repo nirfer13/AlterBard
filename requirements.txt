@@ -14,3 +14,5 @@ yarl==1.6.3
 psycopg==3.0.14
 psycopg2-binary==2.9.3
 asyncpg
+Pillow
+requires.io

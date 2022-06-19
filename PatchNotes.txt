@@ -32,3 +32,7 @@ komendy #flex oraz dostęp do kanału #NSFW. Każdy sezon kończy się w poniedz
 - Spawn bossów jest dwukrotnie częstszy.
 - Rework dropa z bossa. Od tej pory rzadki i epicki boss nie tylko częściej dropi rzadsze nagrody, ale również posiada szansę na nagrody,
 które są niemożliwe przy pokonaniu zwykłego bossa. Nagroda w doświadczeniu została zredukowana.
+
+Patch 0.3.3
+- Nowa komenda dla @Rzeźnik potworów. #kolor <kolor w hex> np. #kolor C70039 zmienia kolor roli na czerwony.
+

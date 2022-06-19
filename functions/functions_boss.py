@@ -6,6 +6,8 @@ import json
 import os
 
 from datetime import datetime, timedelta
+from PIL import Image
+from io import BytesIO
 
 import time
 import datetime
@@ -227,6 +229,39 @@ class functions_boss(commands.Cog, name="functions_boss"):
         print("Random flex gif selecting.")
         gif = "flexgifs/" + random.choice(os.listdir("flexgifs/"))
         await ctx.channel.send(file=discord.File(gif))
+
+    #function to change color of Boss Slayer Role
+    global changeColor
+    async def changeColor(self, ctx, hexColor):
+        print("Changing color.")
+        bossslayer_role = discord.utils.get(ctx.guild.roles, id=983798433590673448)
+        print("Role taken.")
+        print(bossslayer_role)
+        hexColor = "0x" + hexColor
+        print("Hex Color: " + hexColor)
+        an_integer = int(hexColor, 16)
+        print(an_integer)
+        await bossslayer_role.edit(colour=an_integer, reason="Zmiana przez użytkownika.")
+
+    #function to change icon of Boss Slayer Role
+    global changeIcon
+    async def changeIcon(self, ctx, iconNum):
+        print("Changing icon.")
+        bossslayer_role = discord.utils.get(ctx.guild.roles, id=687585577901883413)
+        print("Role taken.")
+        print(bossslayer_role)
+        print("1.")
+        byteImgIO = BytesIO()
+        print("2.")
+        byteImg = Image.open("BossSlayerIcons/1.png")
+        print("Image opened.")
+        byteImg.save(byteImgIO, "PNG")
+        print("3.")
+        byteImgIO.seek(0)
+        print("4.")
+        byteImg = byteImgIO.read()
+        print("Image to byteImageIO.")
+        await bossslayer_role.edit(display_icon=byteImg, reason="Zmiana przez użytkownika.")
           
 
 def setup(bot):

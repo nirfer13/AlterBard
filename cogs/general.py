@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import datetime
 import sys
 sys.path.insert(1, './functions/')
+import functions_general
 
 # general bag for commands that does not fit anywhere else
 
@@ -26,7 +27,7 @@ class general(commands.Cog, name="general"):
     # both parameters can be changed in commands params
     # simple formmating userName | channelName | message
     @commands.command(brief="Saves messages from current channel to txt, default amount of messages == 100")
-    @commands.has_any_role("⚡Game Master", "🍕Creative Game Grandmaster")
+    @commands.has_permissions(administrator=True)
     async def saveToTxt(self, ctx, limit: int = 100):
         text_channel_list = []
         guild = ctx.guild
@@ -51,8 +52,8 @@ class general(commands.Cog, name="general"):
     
 
     # command to clear channel
-    @commands.command(pass_context = True, brief="Clear channel messages")
-    @commands.has_any_role("⚡Game Master", "🍕Creative Game Grandmaster")
+    @commands.command(name="clear", pass_context = True, brief="Clear channel messages")
+    @commands.has_permissions(administrator=True)
     async def clear(self, ctx):
         await functions_general.fClear(self, ctx)
     
