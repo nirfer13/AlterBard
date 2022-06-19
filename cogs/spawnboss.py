@@ -327,6 +327,7 @@ class message(commands.Cog, name="spawnBoss"):
                                         await functions_database.updateRecordTable(self, ctx, bossHunterID.name, recordTurnTime)
 
                                     #Ranking - add points
+                                    print("Boss rarity before adding to ranking: " + str(bossRarity))
                                     if bossRarity == 0:
                                         points = 1
                                     elif bossRarity == 1:
