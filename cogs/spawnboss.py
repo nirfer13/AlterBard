@@ -303,6 +303,7 @@ class message(commands.Cog, name="spawnBoss"):
                                 cmdTimeout = 7
                             else:
                                 #Timeout depends on boss rarity
+                                print("Boss rarity before timeout calc: " + str(bossRarity))
                                 cmdTimeout = 5 - bossRarity
                             msg = await self.bot.wait_for('message', check=check(ctx), timeout=cmdTimeout)
                             response = str(msg.content)
@@ -335,7 +336,7 @@ class message(commands.Cog, name="spawnBoss"):
                                     elif bossRarity == 2:
                                         points = 6
                                     else:
-                                        points = 1
+                                        points = 3
                                     await functions_database.updateRankingTable(self, ctx, bossHunterID.id, points)
                             
                                     #Spawn resume off

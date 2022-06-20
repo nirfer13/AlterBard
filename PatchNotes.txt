@@ -34,5 +34,11 @@ komendy #flex oraz dostęp do kanału #NSFW. Każdy sezon kończy się w poniedz
 które są niemożliwe przy pokonaniu zwykłego bossa. Nagroda w doświadczeniu została zredukowana.
 
 Patch 0.3.3
-- Nowa komenda dla @Rzeźnik potworów. #kolor <kolor w hex> np. #kolor C70039 zmienia kolor roli na czerwony.
+- Nowa komenda dla @Rzeźnik potworów. Zostanie ujawniona w poniedziałek.
+- Nowy system inicjalizacji walki, gdy jest więcej chętnych.
+- Zmiany kosmetyczne podczas pisania komend przez bota.
+- Nowe komendy podczas walki z bossem.
+- Wieksza losowość przy pojawianiu się bossa.
+- Usunięcie czyszczenia kanału przed komunikatem o zbliżającym się potworze.
+- Usunięcie komunikatu po dobrze wpisanej komendzie w trakcie walki.
 
