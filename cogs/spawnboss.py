@@ -209,15 +209,12 @@ class message(commands.Cog, name="spawnBoss"):
             if bossAlive == 4: #or str(ctx.message.author.id) == '291836779495948288':
                 bossAlive = 5
                 respawnResume = False
-                author = discord.User.id
                 preFight = False
 
                 try:
-                    async with ctx.typing():
-                        anotherAtkCmd = await self.bot.wait_for('message', timeout=5)
+                    anotherAtkCmd = await self.bot.wait_for('message', timeout=10)
                     response = str(anotherAtkCmd.content)
-                    print(response)
-                    if response == "#zaatakuj":
+                    if response == "#zaatakuj" and anotherAtkCmd.author != ctx.message.author:
                         preFight = True
                         print("Prefight: " + str(preFight))
                         async with ctx.typing():
