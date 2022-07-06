@@ -165,6 +165,9 @@ class message(commands.Cog, name="spawnBoss"):
                 print("Channel cleared.")
                 await functions_general.fClear(self, ctx)
                 print("Boss appeared.")
+                #Send info about boss spawn
+                chatChannel = self.bot.get_channel(696932659833733131)
+                await chatChannel.send("Na kanale <#970684202880204831> pojawił się właśnie potwór! Zabijcie go, żeby zgarnąć nagrody!")
                 #Send boss image based on rarity
                 global initCommand
                 initCommand = "zaatakuj"
@@ -212,7 +215,7 @@ class message(commands.Cog, name="spawnBoss"):
                 preFight = False
 
                 try:
-                    anotherAtkCmd = await self.bot.wait_for('message', timeout=10)
+                    anotherAtkCmd = await self.bot.wait_for('message', timeout=15)
                     response = str(anotherAtkCmd.content)
                     if response == "#zaatakuj" and anotherAtkCmd.author != ctx.message.author:
                         preFight = True
@@ -235,7 +238,7 @@ class message(commands.Cog, name="spawnBoss"):
                     try:
                         print("Prefight True")
                         while True:
-                            spellCmd = await self.bot.wait_for('message', timeout=6)
+                            spellCmd = await self.bot.wait_for('message', timeout=15)
                             print ("Wait for event.")
                             response = str(spellCmd.content)
                             if  response.lower() == initCmd.lower():
@@ -308,7 +311,7 @@ class message(commands.Cog, name="spawnBoss"):
                             if response.lower() == requestedAction[0][choosenAction]:
                                 #Boss killed?
                                 if iterator >= bossHP:
-                                    bossAlive = 0
+                                    
                                     await ctx.channel.send('Brawo <@' + format(bossHunterID.id) + '>! Pokonałeś bossa! <:POGGIES:790963160491753502><:POGGIES:790963160491753502><:POGGIES:790963160491753502>')
 
                                     #Time record
@@ -345,6 +348,8 @@ class message(commands.Cog, name="spawnBoss"):
                                     #Send info about loot
                                     logChannel = self.bot.get_channel(881090112576962560)
                                     await logChannel.send("<@291836779495948288>!   " + bossHunterID.name + " otrzymał: " + str(dropLoot[0]))
+
+                                    bossAlive = 0
                             
                                 else:
                                     print("Good command.")
