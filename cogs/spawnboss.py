@@ -161,7 +161,6 @@ class message(commands.Cog, name="spawnBoss"):
                     await asyncio.sleep(random.randint(3,10))  # time in second
             #=== Episode 3 - Boss respawn
             if bossAlive == 3:
-                bossAlive = 4
                 print("Channel cleared.")
                 await functions_general.fClear(self, ctx)
                 print("Boss appeared.")
@@ -172,7 +171,7 @@ class message(commands.Cog, name="spawnBoss"):
                 global initCommand
                 initCommand = "zaatakuj"
                 initCommand = await functions_boss.fBossImage(self, ctx, bossRarity)
-
+                bossAlive = 4
             else:
                 await asyncio.sleep(5) #sleep for a while
     
@@ -210,7 +209,6 @@ class message(commands.Cog, name="spawnBoss"):
         if ctx.channel.id == 970684202880204831 or ctx.channel.id == 970571647226642442:
             global bossAlive, bossRarity, respawnResume
             if bossAlive == 4: #or str(ctx.message.author.id) == '291836779495948288':
-                bossAlive = 5
                 respawnResume = False
                 preFight = False
 
@@ -244,6 +242,7 @@ class message(commands.Cog, name="spawnBoss"):
                             if  response.lower() == initCmd.lower():
                                 bossHunterID = spellCmd.author
                                 await spellCmd.add_reaction("⚔️")
+                                bossAlive = 5
                                 break
                             else:
                                 Try+=1
@@ -259,6 +258,7 @@ class message(commands.Cog, name="spawnBoss"):
                     print("Prefight False")
                     bossHunterID = ctx.author
                     print("Boss hunter name: " + bossHunterID.name)
+                    bossAlive = 5
                 
                 if bossAlive == 5:
                     async with ctx.typing():
