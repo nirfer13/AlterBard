@@ -165,8 +165,19 @@ class message(commands.Cog, name="spawnBoss"):
                 await functions_general.fClear(self, ctx)
                 print("Boss appeared.")
                 #Send info about boss spawn
-                chatChannel = self.bot.get_channel(696932659833733131)
-                await chatChannel.send("Na kanale <#970684202880204831> pojawił się właśnie potwór! Zabijcie go, żeby zgarnąć nagrody!")
+                
+                try:
+                    await generalSpawnMessage.delete()
+                    print("Message deleted.")
+                except:
+                    print("No general message to delete.")
+                    pass
+                if DebugMode == False:
+                    chatChannel = self.bot.get_channel(696932659833733131)
+                    generalSpawnMessage = await chatChannel.send("Na kanale <#970684202880204831> pojawił się właśnie potwór! Zabijcie go, żeby zgarnąć nagrody!")
+                else:
+                    chatChannel = self.bot.get_channel(881090112576962560)
+                    generalSpawnMessage = await chatChannel.send("Na kanale <#970684202880204831> pojawił się właśnie potwór! Zabijcie go, żeby zgarnąć nagrody!")
                 #Send boss image based on rarity
                 global initCommand
                 initCommand = "zaatakuj"
@@ -209,25 +220,41 @@ class message(commands.Cog, name="spawnBoss"):
         if ctx.channel.id == 970684202880204831 or ctx.channel.id == 970571647226642442:
             global bossAlive, bossRarity, respawnResume
             if bossAlive == 4: #or str(ctx.message.author.id) == '291836779495948288':
+
+                bossAlive = 5
                 respawnResume = False
                 preFight = False
+                mainUser = ctx.author
+
+                def check(author):
+                    def inner_check(message): 
+                        if message.author == author:
+                            print("Group init error: same author!")
+                            return False
+                        else:
+                            if message.content.lower() == "#zaatakuj": 
+                                return True 
+                            else:
+                                print("Group init error: wrong message!")
+                                return False
+                    return inner_check
 
                 try:
-                    anotherAtkCmd = await self.bot.wait_for('message', timeout=15)
-                    response = str(anotherAtkCmd.content)
-                    if response == "#zaatakuj" and anotherAtkCmd.author != ctx.message.author:
-                        preFight = True
-                        print("Prefight: " + str(preFight))
-                        async with ctx.typing():
-                            await asyncio.sleep(2)
-                            await ctx.channel.send('"**SPOKÓJ!!!**" - *słyszyscie głos w swojej głowie.* "Zachowajcie resztki honoru i wystawcie do walki najsilniejszego z Was."')
-                        initCmd = random.choice(["konstantynopolitańczykówna", "degrengolada", "Antropomorfizacja", "Zjawiskowy", "Opsomaniak", "Egzegeza", "Chasydyzm", "Eksplikacja", "Apoteoza", "Buńczuczny","Konstantynopolitańczykówna", "Degrengolada", "Prokrastynacja", "Wszeteczeństwo", "Melepeta", "Imponderabilia", "Inwariant", "Tromtadracja", "Transcendencja", "Lumpenproletariat"])
-                        await asyncio.sleep(6)
-                        async with ctx.typing():
-                            await ctx.channel.send('"Pierwszy, który PŁYNNIE wypowie zaklęcie, które zaraz zdradzę, będzie godzien walki ze mną!"')
-                        await asyncio.sleep(8)
-                        async with ctx.typing():
-                            await ctx.channel.send('"Zaklęcie to **' + " ".join(initCmd.upper()) + '**"')
+                    anotherAtkCmd = await self.bot.wait_for('message', timeout=15, check=check(ctx.author))
+                    #response = str(anotherAtkCmd.content)
+                    #if response == "#zaatakuj" and anotherAtkCmd.author != ctx.message.author:
+                    preFight = True
+                    print("Prefight: " + str(preFight))
+                    async with ctx.typing():
+                        await asyncio.sleep(2)
+                        await ctx.channel.send('"**SPOKÓJ!!!**" - *słyszyscie głos w swojej głowie.* "Zachowajcie resztki honoru i wystawcie do walki najsilniejszego z Was."')
+                    initCmd = random.choice(["konstantynopolitańczykówna", "degrengolada", "Antropomorfizacja", "Zjawiskowy", "Opsomaniak", "Egzegeza", "Chasydyzm", "Eksplikacja", "Apoteoza", "Buńczuczny","Konstantynopolitańczykówna", "Degrengolada", "Prokrastynacja", "Wszeteczeństwo", "Melepeta", "Imponderabilia", "Inwariant", "Tromtadracja", "Transcendencja", "Lumpenproletariat"])
+                    await asyncio.sleep(6)
+                    async with ctx.typing():
+                        await ctx.channel.send('"Pierwszy, który PŁYNNIE wypowie zaklęcie, które zaraz zdradzę, będzie godzien walki ze mną!"')
+                    await asyncio.sleep(8)
+                    async with ctx.typing():
+                        await ctx.channel.send('"Zaklęcie to **' + " ".join(initCmd.upper()) + '**"')
                 except asyncio.TimeoutError:
                     pass
 
@@ -242,7 +269,7 @@ class message(commands.Cog, name="spawnBoss"):
                             if  response.lower() == initCmd.lower():
                                 bossHunterID = spellCmd.author
                                 await spellCmd.add_reaction("⚔️")
-                                bossAlive = 5
+                                bossAlive = 6
                                 break
                             else:
                                 Try+=1
@@ -258,9 +285,9 @@ class message(commands.Cog, name="spawnBoss"):
                     print("Prefight False")
                     bossHunterID = ctx.author
                     print("Boss hunter name: " + bossHunterID.name)
-                    bossAlive = 5
+                    bossAlive = 6
                 
-                if bossAlive == 5:
+                if bossAlive == 6:
                     async with ctx.typing():
                         await ctx.channel.send('Zaatakowałeś bossa <@' + format(bossHunterID.id) + '>! <:REEeee:790963160495947856> Wpisz pojawiające się komendy tak szybko, jak to możliwe! Przygotuj się!')
                     await asyncio.sleep(5)
