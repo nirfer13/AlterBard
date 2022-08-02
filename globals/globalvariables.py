@@ -3,4 +3,4 @@
 
 #DebugMode
 global DebugMode
-DebugMode = False
+DebugMode = True
