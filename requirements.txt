@@ -7,7 +7,6 @@ chardet==4.0.0
 colorama==0.4.4
 cryptography==3.4.7
 discord.py==1.7.3
-ffmpeg==1.4
 idna==3.3
 isort==5.8.0
 lazy-object-proxy==1.6.0
@@ -27,3 +26,4 @@ yarl==1.7.2
 youtube-dl==2021.12.17
 python-dotenv==0.18.0
 asyncpg
+ffmpeg
