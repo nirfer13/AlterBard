@@ -26,4 +26,5 @@ yarl==1.7.2
 youtube-dl==2021.12.17
 python-dotenv==0.18.0
 asyncpg
+git+https://github.com/Rapptz/discord.py
 ffmpeg
