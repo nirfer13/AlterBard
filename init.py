@@ -2,11 +2,7 @@ import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import os
-import random
-import time
-import asyncio
-import asyncpg
-from asyncpg.pool import create_pool
+
 
 from globals.globalvariables import DebugMode
 
