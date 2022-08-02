@@ -22,11 +22,14 @@ class music_cog(commands.Cog, name="music_cog"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        voice_channel = self.bot.get_channel(859739923363921954)
+        voice_channel = self.bot.get_channel(1004106973748408432)
         print("Channel acquired.")
-        list = ["https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8"]
+        with open('fantasy_list.txt') as f:
+            list = f.read().splitlines()
         random.shuffle(list)
+        print(list)
         for quary in list:
+            quary = (quary.split(" "))[0]
             song = self.search_yt(quary)
             self.music_queue.append([song, voice_channel])
 
@@ -113,6 +116,7 @@ class music_cog(commands.Cog, name="music_cog"):
             self.is_playing = False
 
     @commands.command(name="play", aliases=["p","playing"], help="Plays a selected song from youtube")
+    @commands.has_permissions(administrator=True)
     async def play(self, ctx, *args):
         query = " ".join(args)
         voice_channel = ctx.author.voice.channel
@@ -132,6 +136,7 @@ class music_cog(commands.Cog, name="music_cog"):
                     await self.play_music(ctx)
 
     @commands.command(name="pause", help="Pauses the current song being played")
+    @commands.has_permissions(administrator=True)
     async def pause(self, ctx, *args):
         if self.is_playing:
             self.is_playing = False
@@ -143,6 +148,7 @@ class music_cog(commands.Cog, name="music_cog"):
             self.vc.resume()
 
     @commands.command(name = "resume", aliases=["r"], help="Resumes playing with the discord bot")
+    @commands.has_permissions(administrator=True)
     async def resume(self, ctx, *args):
         if self.is_paused:
             self.is_paused = False
@@ -150,6 +156,7 @@ class music_cog(commands.Cog, name="music_cog"):
             self.vc.resume()
 
     @commands.command(name="skip", aliases=["s"], help="Skips the current song being played")
+    @commands.has_permissions(administrator=True)
     async def skip(self, ctx):
         if self.vc != None and self.vc:
             self.vc.stop()
@@ -158,6 +165,7 @@ class music_cog(commands.Cog, name="music_cog"):
 
 
     @commands.command(name="queue", aliases=["q"], help="Displays the current songs in queue")
+    @commands.has_permissions(administrator=True)
     async def queue(self, ctx):
         retval = ""
         for i in range(0, len(self.music_queue)):
@@ -171,6 +179,7 @@ class music_cog(commands.Cog, name="music_cog"):
             await ctx.send("No music in queue")
 
     @commands.command(name="clear", aliases=["c", "bin"], help="Stops the music and clears the queue")
+    @commands.has_permissions(administrator=True)
     async def clear(self, ctx):
         if self.vc != None and self.is_playing:
             self.vc.stop()
@@ -178,11 +187,18 @@ class music_cog(commands.Cog, name="music_cog"):
         await ctx.send("Music queue cleared")
 
     @commands.command(name="leave", aliases=["disconnect", "l", "d"], help="Kick the bot from VC")
+    @commands.has_permissions(administrator=True)
     async def dc(self, ctx):
         self.is_playing = False
         self.is_paused = False
         await self.vc.disconnect()
 
+    @commands.command(name="invite", aliases=["inv"], help="Invites to the concert")
+    @commands.has_permissions(administrator=True)
+    async def dc(self, ctx):
+        invite_channel = self.bot.get_channel(825698027993956422)
+        str = "Drodzy Awanturnicy! Po trudach dzisiejszego dnia zapraszam na skromny koncert w moim wykonaniu <#291836779495948288>! Od dzisiaj codziennie b\u0119d\u0119 tu na Was czeka\u0142! @here"
+        await invite_channel.send(str)
 
 def setup(bot):
     bot.add_cog(music_cog(bot))
