@@ -25,5 +25,4 @@ wrapt==1.12.1
 yarl==1.7.2
 youtube-dl==2021.12.17
 python-dotenv==0.18.0
-asyncpg
 ffmpeg

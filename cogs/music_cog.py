@@ -1,7 +1,7 @@
 from ast import alias
 import discord
 from discord.ext import commands
-
+import random
 from youtube_dl import YoutubeDL
 
 class music_cog(commands.Cog, name="music_cog"):
@@ -24,10 +24,12 @@ class music_cog(commands.Cog, name="music_cog"):
     async def on_ready(self):
         voice_channel = self.bot.get_channel(859739923363921954)
         print("Channel acquired.")
-        song = self.search_yt("https://www.youtube.com/watch?v=M-mtdN6R3bQ")
-        self.music_queue.append([song, voice_channel])
-        song = self.search_yt("https://www.youtube.com/watch?v=L5CV53wCWO0/")
-        self.music_queue.append([song, voice_channel])
+        list = ["https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8","https://www.youtube.com/watch?v=62Nl7CmdwUU", "https://www.youtube.com/watch?v=3m51oKG3BKA", "https://www.youtube.com/watch?v=qtrgZjC4W8A", "https://www.youtube.com/watch?v=dwMZSXFJ4S8"]
+        random.shuffle(list)
+        for quary in list:
+            song = self.search_yt(quary)
+            self.music_queue.append([song, voice_channel])
+
         if self.is_playing == False:
             await self.play_music2()
 
