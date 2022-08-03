@@ -52,21 +52,25 @@ class music_cog(commands.Cog, name="music_cog"):
             length = len(self.music_queue)
             if len(self.music_queue) > 0:
                 self.is_playing = True
-                
-                #get the first url
-                m_url = self.music_queue[x][0]['source']
-                x += 1
-                print(m_url)
-                print(x)
-                print(length)
-                if x >= length:
-                    x = 0
-                #remove the first element as you are currently playing it
-                #self.music_queue.pop(0)
                 try:
+                    #get the first url
+                    print("Preparing URL")
+                    m_url = self.music_queue[x][0]['source']
+                    x += 1
+                    print(m_url)
+                    print(x)
+                    print(length)
+                    if x >= length:
+                        x = 0
+                    #remove the first element as you are currently playing it
+                    #self.music_queue.pop(0)
                     self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
-                except:
+                else:
+                    x += 1
+                    if x >= length:
+                        x = 0
                     pass
+
             else:
                 self.is_playing = False
 
