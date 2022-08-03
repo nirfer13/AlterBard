@@ -56,6 +56,7 @@ class music_cog(commands.Cog, name="music_cog"):
                 #get the first url
                 m_url = self.music_queue[x][0]['source']
                 x += 1
+                print(m_url)
                 print(x)
                 print(length)
                 if x >= length:
@@ -197,7 +198,7 @@ class music_cog(commands.Cog, name="music_cog"):
     @commands.has_permissions(administrator=True)
     async def dc(self, ctx):
         invite_channel = self.bot.get_channel(825698027993956422)
-        str = "Drodzy Awanturnicy! Po trudach dzisiejszego dnia zapraszam na skromny koncert w moim wykonaniu <#291836779495948288>! Od dzisiaj codziennie b\u0119d\u0119 tu na Was czeka\u0142! @here"
+        str = "Drodzy Awanturnicy! Po trudach dzisiejszego dnia zapraszam na skromny koncert w moim wykonaniu <#1004106973748408432>! Od dzisiaj codziennie b\u0119d\u0119 tu na Was czeka\u0142! @here"
         await invite_channel.send(str)
 
 def setup(bot):
