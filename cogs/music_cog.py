@@ -70,6 +70,8 @@ class music_cog(commands.Cog, name="music_cog"):
                     x += 1
                     if x >= length:
                         x = 0
+                    m_url = self.music_queue[x][0]['source']
+                    self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
                     pass
 
             else:
