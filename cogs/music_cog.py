@@ -63,8 +63,10 @@ class music_cog(commands.Cog, name="music_cog"):
                     x = 0
                 #remove the first element as you are currently playing it
                 #self.music_queue.pop(0)
-
-                self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
+                try:
+                    self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
+                except:
+                    pass
             else:
                 self.is_playing = False
 
