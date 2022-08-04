@@ -12,20 +12,15 @@ class music_cog(commands.Cog, name="music_cog"):
         self.is_playing = False
         self.is_paused = False
         global x
-        x = 1
+        x = 0
         # 2d array containing [song, channel]
         self.music_queue = []
         self.YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist':'True'}
         self.FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
-
+        self.vc = None
 
     @commands.Cog.listener()
     async def on_ready(self):
-        try:
-            await self.vc.disconnect()
-        except:
-            pass
-        self.vc = None
 
         voice_channel = self.bot.get_channel(1004106973748408432)
         print("Channel acquired.")
@@ -34,13 +29,13 @@ class music_cog(commands.Cog, name="music_cog"):
         random.shuffle(list)
         print(list)
         for quary in list:
+            
             quary = (quary.split(" "))[0]
             song = self.search_yt(quary)
             self.music_queue.append([song, voice_channel])
 
-
-
         if self.is_playing == False:
+            print("Start play_music2")
             await self.play_music2()
 
 
@@ -117,14 +112,21 @@ class music_cog(commands.Cog, name="music_cog"):
             print("Going to play some music")
 
             m_url = self.music_queue[0][0]['source']
-            
+            print("URL prepared")
+
             #try to connect to voice channel if you are not already connected
             if self.vc == None or not self.vc.is_connected():
                 self.vc = await self.music_queue[0][1].connect()
 
+                #in case we fail to connect
+                if self.vc == None:
+                    await ctx.send("Could not connect to the voice channel")
+                    return
+
             else:
                 await self.vc.move_to(self.music_queue[0][1])
-            
+            print("Connected to the Voice Channel")
+
             #remove the first element as you are currently playing it
             #self.music_queue.pop(0)
 
