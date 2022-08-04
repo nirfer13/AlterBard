@@ -17,14 +17,15 @@ class music_cog(commands.Cog, name="music_cog"):
         self.music_queue = []
         self.YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist':'True'}
         self.FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
-
+        try:
+            await self.vc.disconnect()
+        except:
+            pass
         self.vc = None
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.is_playing = False
-        self.is_paused = False
-        await self.vc.disconnect()
+
         voice_channel = self.bot.get_channel(1004106973748408432)
         print("Channel acquired.")
         with open('fantasy_list.txt') as f:
