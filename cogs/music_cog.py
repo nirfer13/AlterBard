@@ -22,6 +22,9 @@ class music_cog(commands.Cog, name="music_cog"):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        self.is_playing = False
+        self.is_paused = False
+        await self.vc.disconnect()
         voice_channel = self.bot.get_channel(1004106973748408432)
         print("Channel acquired.")
         with open('fantasy_list.txt') as f:
@@ -32,6 +35,8 @@ class music_cog(commands.Cog, name="music_cog"):
             quary = (quary.split(" "))[0]
             song = self.search_yt(quary)
             self.music_queue.append([song, voice_channel])
+
+
 
         if self.is_playing == False:
             await self.play_music2()
