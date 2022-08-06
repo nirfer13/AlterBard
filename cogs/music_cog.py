@@ -52,8 +52,10 @@ class music_cog(commands.Cog, name="music_cog"):
         timestamp = (datetime.datetime.utcnow() + datetime.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
+            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
         else:
             list = fantasy_list
+            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
         random.shuffle(list)
         print(list)
             
@@ -72,12 +74,16 @@ class music_cog(commands.Cog, name="music_cog"):
             timestamp = (datetime.datetime.utcnow() + datetime.timedelta(hours=2))
             if timestamp.strftime("%a") == "Fri":
                 list = party_list
+                # Setting `Playing ` status
+                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
             else:
                 list = fantasy_list
+                # Setting `Playing ` status
+                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
             random.shuffle(list)
-            print("It's a Friday.")
+            print("Loop check.")
             # wait some time before another loop. Don't make it more than 60 sec or it will skip
-            await asyncio.sleep(600)
+            await asyncio.sleep(300)
 
      #searching the item on youtube
     def search_yt(self, item):
