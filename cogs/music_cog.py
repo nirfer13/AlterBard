@@ -52,10 +52,10 @@ class music_cog(commands.Cog, name="music_cog"):
         timestamp = (datetime.datetime.utcnow() + datetime.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
-            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
+            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
         else:
             list = fantasy_list
-            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
+            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
         random.shuffle(list)
         print(list)
             
@@ -68,22 +68,23 @@ class music_cog(commands.Cog, name="music_cog"):
 
     #Check timestamp task
     async def msg1(self):
-        while True:
+        while self.is_playing == True:
             global list
-
+            print("Loop check 1.")
             timestamp = (datetime.datetime.utcnow() + datetime.timedelta(hours=2))
             if timestamp.strftime("%a") == "Fri":
                 list = party_list
                 # Setting `Playing ` status
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
+                #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
             else:
                 list = fantasy_list
                 # Setting `Playing ` status
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
+                #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
             random.shuffle(list)
-            print("Loop check.")
+            
             # wait some time before another loop. Don't make it more than 60 sec or it will skip
-            await asyncio.sleep(300)
+            print("Loop check 2.")
+            await asyncio.sleep(10)
 
      #searching the item on youtube
     def search_yt(self, item):
@@ -111,6 +112,7 @@ class music_cog(commands.Cog, name="music_cog"):
                     #remove the first element as you are currently playing it
                     self.music_queue.pop(0)
                     self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
+                    print("Play next executed.")
                 except:
                     print("Error, URL not prepared. Skip.")
                     x = functions_general.addSong(list, x, voice_channel)
@@ -177,8 +179,6 @@ class music_cog(commands.Cog, name="music_cog"):
 
             #remove the first element as you are currently playing it
             self.music_queue.pop(0)
-
-
 
             self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
         else:
