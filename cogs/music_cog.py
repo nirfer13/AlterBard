@@ -3,6 +3,16 @@ import discord
 from discord.ext import commands
 import random
 from youtube_dl import YoutubeDL
+import datetime
+import asyncio
+
+import sys
+
+
+sys.path.insert(1, './functions/')
+import functions_general
+
+global x
 
 class music_cog(commands.Cog, name="music_cog"):
     def __init__(self, bot):
@@ -22,22 +32,52 @@ class music_cog(commands.Cog, name="music_cog"):
     @commands.Cog.listener()
     async def on_ready(self):
 
+        #Define globals
+        global list, party_list, fantasy_list
+        global voice_channel
         voice_channel = self.bot.get_channel(1004106973748408432)
         print("Channel acquired.")
+
+        #Create Fantasy Playlist
         with open('fantasy_list.txt') as f:
-            list = f.read().splitlines()
+            fantasy_list = f.read().splitlines()
+
+        #Create Party Playlist
+        with open('party_list.txt') as g:
+            party_list = g.read().splitlines()
+
+        #Check timestamp and start task
+        self.task = self.bot.loop.create_task(self.msg1())
+
+        timestamp = (datetime.datetime.utcnow() + datetime.timedelta(hours=2))
+        if timestamp.strftime("%a") == "Fri":
+            list = party_list
+        else:
+            list = fantasy_list
         random.shuffle(list)
         print(list)
-        for quary in list:
             
-            quary = (quary.split(" "))[0]
-            song = self.search_yt(quary)
-            self.music_queue.append([song, voice_channel])
+        global x
+        x = functions_general.addSong(self, list, 0, voice_channel)
 
         if self.is_playing == False:
             print("Start play_music2")
             await self.play_music2()
 
+    #Check timestamp task
+    async def msg1(self):
+        while True:
+            global list
+
+            timestamp = (datetime.datetime.utcnow() + datetime.timedelta(hours=2))
+            if timestamp.strftime("%a") == "Fri":
+                list = party_list
+            else:
+                list = fantasy_list
+            random.shuffle(list)
+            print("It's a Friday.")
+            # wait some time before another loop. Don't make it more than 60 sec or it will skip
+            await asyncio.sleep(600)
 
      #searching the item on youtube
     def search_yt(self, item):
@@ -51,33 +91,37 @@ class music_cog(commands.Cog, name="music_cog"):
 
     def play_next(self):
             global x
-            length = len(self.music_queue)
-            if len(self.music_queue) > 0:
+            global list
+            print("Play_next - x: " + str(x) + ", List length: " + str(len(list)))
+            if x < len(list):
                 self.is_playing = True
                 try:
                     #get the first url
                     print("Preparing URL")
-                    m_url = self.music_queue[x][0]['source']
-                    x += 1
-                    print(m_url)
-                    print(x)
-                    print(length)
-                    if x >= length:
-                        x = 0
+                    m_url = self.music_queue[0][0]['source']
+
+                    x = functions_general.addSong(self, list, x, voice_channel)
+
                     #remove the first element as you are currently playing it
-                    #self.music_queue.pop(0)
+                    self.music_queue.pop(0)
                     self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
                 except:
                     print("Error, URL not prepared. Skip.")
-                    x += 1
-                    if x >= length:
-                        x = 0
-                    m_url = self.music_queue[x][0]['source']
+                    x = functions_general.addSong(list, x, voice_channel)
+
+                    m_url = self.music_queue[0][0]['source']
+
                     self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
                     pass
 
             else:
-                self.is_playing = False
+                x = 0
+                self.music_queue.pop(0)
+                x = functions_general.addSong(self, list, x, voice_channel)
+
+                m_url = self.music_queue[0][0]['source']
+
+                self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
 
     # infinite loop checking 
     async def play_music(self, ctx):
@@ -118,17 +162,17 @@ class music_cog(commands.Cog, name="music_cog"):
             if self.vc == None or not self.vc.is_connected():
                 self.vc = await self.music_queue[0][1].connect()
 
-                #in case we fail to connect
-                if self.vc == None:
-                    await ctx.send("Could not connect to the voice channel")
-                    return
-
             else:
                 await self.vc.move_to(self.music_queue[0][1])
             print("Connected to the Voice Channel")
 
+            global x
+            x = functions_general.addSong(self, list, x, voice_channel)
+
             #remove the first element as you are currently playing it
-            #self.music_queue.pop(0)
+            self.music_queue.pop(0)
+
+
 
             self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
         else:
