@@ -84,7 +84,7 @@ class music_cog(commands.Cog, name="music_cog"):
             
             # wait some time before another loop. Don't make it more than 60 sec or it will skip
             print("Loop check 2.")
-            await asyncio.sleep(10)
+            await asyncio.sleep(600)
 
      #searching the item on youtube
     def search_yt(self, item):
