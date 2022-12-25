@@ -1,11 +1,21 @@
+import asyncio
+import datetime as dt
 import re
 import typing as t
+import random
 
 import discord
 import wavelink
 from discord.ext import commands
 
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+OPTIONS = {
+    "1️⃣": 0,
+    "2⃣": 1,
+    "3⃣": 2,
+    "4⃣": 3,
+    "5⃣": 4,
+}
 
 class AlreadyConnectedToChannel(commands.CommandError):
     pass
@@ -28,6 +38,10 @@ class Queue:
         self._queue.extend(args)
 
     @property
+    def is_empty(self):
+        return not self._queue
+
+    @property
     def first_track(self):
         if not self._queue:
             raise QueueIsEmpty
@@ -41,7 +55,7 @@ class Queue:
         self.position += 1
 
         if self.position > len(self._queue)-1:
-            return None
+            self.position = 0
 
         return self._queue[self.position]
 
@@ -77,10 +91,48 @@ class Player(wavelink.Player):
             self.queue.add(tracks[0])
             await ctx.send(f"Added {tracks[0].title} to the queue.")
         else:
-            pass
+            if (track := await self.choose_track(ctx, tracks)) is not None:
+                self.queue.add(track)
+                await ctx.send(f"Added {track.title} to the queue.")
 
-        if not self.is_playing:
+        if not self.is_playing and not self.queue.is_empty:
             await self.start_playback()
+
+    async def choose_track(self, ctx, tracks):
+        def _check(r, u):
+            return(
+                r.emoji in OPTIONS.keys()
+                and u == ctx.author
+                and r.message.id == msg.id
+            )
+
+        embed = discord.Embed(
+            title="Choose a song",
+            description=(
+                "\n".join(
+                    f"**{i+1}.** {t.title} ({t.length//60000}:{str(t.length%60).zfill(2)})"
+                    for i, t in enumerate(tracks[:5])
+                )
+            ),
+            color=ctx.author.color,
+            timestamp=dt.datetime.utcnow()
+        )
+        embed.set_author(name="query Results")
+        embed.set_footer(text=f"Invoked by {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+
+        msg = await ctx.send(embed=embed)
+        for emoji in list(OPTIONS.keys())[:min(len(tracks), len(OPTIONS))]:
+            await msg.add_reaction(emoji)
+
+        try:
+            reaction, _ = await self.bot.wait_for("reaction_add", timeout=60, check=_check)
+        except asyncio.TimeoutError:
+            await msg.delete()
+            await ctx.message.delete()
+        else:
+            await msg.delete()
+            return tracks[OPTIONS[reaction.emoji]]
+
 
     async def start_playback(self):
         await self.play(self.queue.first_track)
@@ -96,7 +148,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     def __init__(self, bot):
         self.bot = bot
         self.wavelink = wavelink.Client(bot=bot)
-        self.bot.loop.create_task(self.start_nodes())
+        self.bot.loop.create_task(self.start_nodes()) 
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -108,11 +160,59 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def on_node_ready(self, node):
         print(f"Wavelink node '{node.identifier}' ready.")
 
+        #Define globals
+        global list, party_list, fantasy_list
+        global voice_channel
+
+        voice_channel = self.bot.get_channel(1056200069952589924)
+        print("Channel acquired.")
+
+        #Create Fantasy Playlist
+        with open('fantasy_list.txt') as f:
+            fantasy_list = f.read().splitlines()
+
+        #Create Party Playlist
+        with open('party_list.txt') as g:
+            party_list = g.read().splitlines()
+
+        #Check timestamp and start task
+        self.task = self.bot.loop.create_task(self.msg1())
+
+        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+        if timestamp.strftime("%a") == "Fri":
+            list = party_list
+            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
+        else:
+            list = fantasy_list
+            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
+        random.shuffle(list)
+        print(list)
+
     @wavelink.WavelinkMixin.listener("on_track_stuck")
     @wavelink.WavelinkMixin.listener("on_track_end")
     @wavelink.WavelinkMixin.listener("on_track_exception")
     async def on_player_stop(self, node, payload):
         await payload.player.advance()
+
+    #Check timestamp task
+    async def msg1(self):
+        while self.is_playing == True:
+            global list
+            print("Loop check 1.")
+            timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+            if timestamp.strftime("%a") == "Fri":
+                list = party_list
+                # Setting `Playing ` status
+                #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
+            else:
+                list = fantasy_list
+                # Setting `Playing ` status
+                #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
+            random.shuffle(list)
+            
+            # wait some time before another loop. Don't make it more than 60 sec or it will skip
+            print("Loop check 2.")
+            await asyncio.sleep(600)
 
     async def cog_check(self, ctx):
         if isinstance(ctx.channel, discord.DMChannel):
