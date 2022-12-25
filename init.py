@@ -17,10 +17,11 @@ bot = commands.Bot(
     description=description,
     intents=intents)
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandOnCooldown):
-        await ctx.send('Poczekaj na odnowienie komendy!')
+async def on_error(self, err, *args, **kwargs):
+    raise
+
+async def on_command_error(self, ctx, exc):
+    raise getattr(exc, "original", exc)
 
 #loads cogs as extentions to bot
 if __name__ == '__main__':
