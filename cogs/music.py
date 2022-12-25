@@ -82,56 +82,58 @@ class Player(wavelink.Player):
             pass
 
     async def add_tracks(self, ctx, tracks):
+        print(tracks)
+        print(type(tracks))
         if not tracks:
             raise NoTracksFound
 
         if isinstance(tracks, wavelink.TrackPlaylist):
             self.queue.add(*tracks.tracks)
-        elif len(tracks) == 1:
+        else:
             self.queue.add(tracks[0])
             await ctx.send(f"Added {tracks[0].title} to the queue.")
-        else:
-            if (track := await self.choose_track(ctx, tracks)) is not None:
-                self.queue.add(track)
-                await ctx.send(f"Added {track.title} to the queue.")
+    #     else:
+    #         if (track := await self.choose_track(ctx, tracks)) is not None:
+    #             self.queue.add(track)
+    #             await ctx.send(f"Added {track.title} to the queue.")
 
         if not self.is_playing and not self.queue.is_empty:
             await self.start_playback()
 
-    async def choose_track(self, ctx, tracks):
-        def _check(r, u):
-            return(
-                r.emoji in OPTIONS.keys()
-                and u == ctx.author
-                and r.message.id == msg.id
-            )
+    # async def choose_track(self, ctx, tracks):
+    #     def _check(r, u):
+    #         return(
+    #             r.emoji in OPTIONS.keys()
+    #             and u == ctx.author
+    #             and r.message.id == msg.id
+    #         )
 
-        embed = discord.Embed(
-            title="Choose a song",
-            description=(
-                "\n".join(
-                    f"**{i+1}.** {t.title} ({t.length//60000}:{str(t.length%60).zfill(2)})"
-                    for i, t in enumerate(tracks[:5])
-                )
-            ),
-            color=ctx.author.color,
-            timestamp=dt.datetime.utcnow()
-        )
-        embed.set_author(name="query Results")
-        embed.set_footer(text=f"Invoked by {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+    #     embed = discord.Embed(
+    #         title="Choose a song",
+    #         description=(
+    #             "\n".join(
+    #                 f"**{i+1}.** {t.title} ({t.length//60000}:{str(t.length%60).zfill(2)})"
+    #                 for i, t in enumerate(tracks[:5])
+    #             )
+    #         ),
+    #         color=ctx.author.color,
+    #         timestamp=dt.datetime.utcnow()
+    #     )
+    #     embed.set_author(name="query Results")
+    #     embed.set_footer(text=f"Invoked by {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
 
-        msg = await ctx.send(embed=embed)
-        for emoji in list(OPTIONS.keys())[:min(len(tracks), len(OPTIONS))]:
-            await msg.add_reaction(emoji)
+    #     msg = await ctx.send(embed=embed)
+    #     for emoji in list(OPTIONS.keys())[:min(len(tracks), len(OPTIONS))]:
+    #         await msg.add_reaction(emoji)
 
-        try:
-            reaction, _ = await self.bot.wait_for("reaction_add", timeout=60, check=_check)
-        except asyncio.TimeoutError:
-            await msg.delete()
-            await ctx.message.delete()
-        else:
-            await msg.delete()
-            return tracks[OPTIONS[reaction.emoji]]
+    #     try:
+    #         reaction, _ = await self.bot.wait_for("reaction_add", timeout=60, check=_check)
+    #     except asyncio.TimeoutError:
+    #         await msg.delete()
+    #         await ctx.message.delete()
+    #     else:
+    #         await msg.delete()
+    #         return tracks[OPTIONS[reaction.emoji]]
 
 
     async def start_playback(self):
@@ -159,34 +161,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node):
         print(f"Wavelink node '{node.identifier}' ready.")
-
-        #Define globals
-        global list, party_list, fantasy_list
-        global voice_channel
-
-        voice_channel = self.bot.get_channel(1056200069952589924)
-        print("Channel acquired.")
-
-        #Create Fantasy Playlist
-        with open('fantasy_list.txt') as f:
-            fantasy_list = f.read().splitlines()
-
-        #Create Party Playlist
-        with open('party_list.txt') as g:
-            party_list = g.read().splitlines()
-
-        #Check timestamp and start task
-        self.task = self.bot.loop.create_task(self.msg1())
-
-        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
-        if timestamp.strftime("%a") == "Fri":
-            list = party_list
-            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
-        else:
-            list = fantasy_list
-            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
-        random.shuffle(list)
-        print(list)
 
     @wavelink.WavelinkMixin.listener("on_track_stuck")
     @wavelink.WavelinkMixin.listener("on_track_end")
@@ -279,6 +253,57 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 query = f"ytsearch: [query]"
 
             await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+
+    @commands.command(name="radio")
+    async def radio_command(self, ctx):
+
+        #Define globals
+        global list, party_list, fantasy_list
+        global voice_channel
+
+        voice_channel = self.bot.get_channel(1056200069952589924)
+        print("Channel acquired.")
+
+        #Create Fantasy Playlist
+        with open('fantasy_list.txt') as f:
+            fantasy_list = f.read().splitlines()
+
+        #Create Party Playlist
+        with open('party_list.txt') as g:
+            party_list = g.read().splitlines()
+
+        #Check timestamp and start task
+        self.task = self.bot.loop.create_task(self.msg1())
+
+        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+        if timestamp.strftime("%a") == "Fri":
+            list = party_list
+            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
+        else:
+            list = fantasy_list
+            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
+        random.shuffle(list)
+        print(list)
+
+        player = self.get_player(ctx)
+        channel = await player.connect(ctx, voice_channel)
+
+        for query in list:
+            query = str(query)
+            if not player.is_connected:
+                await player.connect(ctx)
+
+            if query is None:
+                pass
+
+            else:
+                query = query.strip("<>")
+                if not re.match(URL_REGEX, query):
+                    query = f"ytsearch: {query}"
+                print(type(query))
+                await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+
+        
 
 def setup(bot):
     bot.add_cog(Music(bot))
