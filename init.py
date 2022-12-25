@@ -3,9 +3,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import os
 
-
 from globals.globalvariables import DebugMode
-
 
 # token and other needed variables will be hidden in .env file
 load_dotenv()

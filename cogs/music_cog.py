@@ -5,6 +5,7 @@ import random
 from youtube_dl import YoutubeDL
 import datetime
 import asyncio
+import wavelink
 
 import sys
 
@@ -25,7 +26,10 @@ class music_cog(commands.Cog, name="music_cog"):
         x = 0
         # 2d array containing [song, channel]
         self.music_queue = []
-        self.YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist':'True'}
+        self.YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist':'True','postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '192', }]}
         self.FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
         self.vc = None
 
@@ -35,7 +39,7 @@ class music_cog(commands.Cog, name="music_cog"):
         #Define globals
         global list, party_list, fantasy_list
         global voice_channel
-        voice_channel = self.bot.get_channel(1004106973748408432)
+        voice_channel = self.bot.get_channel(1056200069952589924)
         print("Channel acquired.")
 
         #Create Fantasy Playlist
