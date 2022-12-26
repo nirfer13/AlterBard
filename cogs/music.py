@@ -29,13 +29,13 @@ class QueueIsEmpty(commands.CommandError):
 class NoTracksFound(commands.CommandError):
     pass
 
+class NoMoreTracks(commands.CommandError):
+    pass
+
 class Queue:
     def __init__(self):
         self._queue = []
         self.position = 0
-
-    def add(self, *args):
-        self._queue.extend(args)
 
     @property
     def is_empty(self):
@@ -48,6 +48,34 @@ class Queue:
 
         return self._queue[0]
 
+    @property
+    def current_track(self):
+        if not self._queue:
+            raise QueueIsEmpty
+
+        return self._queue[self.position]
+
+    @property
+    def upcoming(self):
+        if not self._queue:
+            raise QueueIsEmpty
+        
+        return self._queue[self.position +1:]
+
+    @property
+    def history(self):
+        if not self._queue:
+            raise QueueIsEmpty
+
+        return self._queue[:self.position]
+
+    @property
+    def length(self):
+        return len(self._queue)
+
+    def add(self, *args):
+        self._queue.extend(args)
+
     def get_next_track(self):
         if not self._queue:
             raise QueueIsEmpty
@@ -58,6 +86,9 @@ class Queue:
             self.position = 0
 
         return self._queue[self.position]
+
+    def empty(self):
+        self._queue.clear()
 
 
 class Player(wavelink.Player):
@@ -303,6 +334,52 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 print(type(query))
                 await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
 
+    @commands.command(name="stop")
+    async def stop_command(self, ctx):
+        player =self.get_player(ctx)
+        player.queue.empty()
+        await player.stop()
+        await ctx.send("Muzyka wstrzymana.")
+
+    @commands.command(name="next", aliases=["skip"])
+    async def next_command(self, ctx):
+        player = self.get_player(ctx)
+
+        if not player.queue.upcoming:
+            raise NoMoreTracks
+
+        await player.stop()
+        await ctx.send("Kolejny utwór w kolejce...")
+
+    @commands.command(name="queue")
+    async def queue_command(self, ctx, show: t.Optional[int] = 10):
+        player = self.get_player(ctx)
+
+        if player.queue.is_empty:
+            raise QueueIsEmpty
+        
+        embed = discord.Embed(
+            title="Kolejka",
+            description=f"Pokazuje następne {show} utworów.",
+            color=ctx.author.color,
+            timestamp=dt.datetime.utcnow()
+        )
+        embed.set_author(name="Informacje o kolejce")
+        embed.set_footer(text=f"Dodane przez {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+        embed.add_field(name="Aktualnie gra", value=player.queue.current_track.title, inline=False)
+        if upcoming := player.queue.upcoming:
+            embed.add_field(
+                name="Następny",
+                value="\n".join(t.title for t in upcoming[:show]),
+                inline=False
+            )
+
+        msg = await ctx.send(embed=embed)
+
+    @queue_command.error
+    async def queue_command_error(self, ctx, exc):
+        if isinstance(exc, QueueIsEmpty):
+            await ctx.send("Kolejka jest pusta.")
         
 
 def setup(bot):
