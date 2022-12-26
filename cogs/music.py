@@ -91,7 +91,7 @@ class Player(wavelink.Player):
             self.queue.add(*tracks.tracks)
         else:
             self.queue.add(tracks[0])
-            await ctx.send(f"Added {tracks[0].title} to the queue.")
+            await ctx.send(f"Dodano {tracks[0].title} do kolejki.")
     #     else:
     #         if (track := await self.choose_track(ctx, tracks)) is not None:
     #             self.queue.add(track)
@@ -190,7 +190,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     async def cog_check(self, ctx):
         if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("Music commands are not available in DMs.")
+            await ctx.send("Komendy nie są dostępne w wiadomościach prywatnych.")
             return False
 
         return True
@@ -227,9 +227,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @connect_command.error
     async def connect_command_error(self, ctx, exc):
         if isinstance(exc, AlreadyConnectedToChannel):
-            await ctx.send("Already connected to a voice channel.")
+            await ctx.send("Już połączono z kanałem głosowym.")
         elif isinstance(exc, NoVoiceChannel):
-            await ctx.send("No suitable voice channel was provided.")
+            await ctx.send("Brak odpowiedniego kanału głosowego.")
 
     @commands.command(name="disconnect")
     async def disconnect_command(self, ctx):
