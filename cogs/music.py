@@ -184,6 +184,62 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         self.bot.loop.create_task(self.start_nodes()) 
 
     @commands.Cog.listener()
+    async def on_ready(self):
+        print("Bot ready...")
+
+        #Weekly ranking task create
+        #self.task2 = self.bot.loop.create_task(self.msg1())
+        await asyncio.sleep(15)
+        voice_channel = self.bot.get_channel(1056200069952589924)
+        print("Channel acquired.")
+
+        #Create Fantasy Playlist
+        with open('fantasy_list.txt') as f:
+            fantasy_list = f.read().splitlines()
+
+        #Create Party Playlist
+        with open('party_list.txt') as g:
+            party_list = g.read().splitlines()
+
+        #Check timestamp and start task
+        self.task = self.bot.loop.create_task(self.msg1())
+
+        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+        if timestamp.strftime("%a") == "Fri":
+            list = party_list
+            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
+        else:
+            list = fantasy_list
+            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
+        random.shuffle(list)
+        #print(list)
+
+        #function to get context
+        channel = self.bot.get_channel(1057198781206106153)
+        msg = await channel.fetch_message(1057204065706188820)
+        ctx = await self.bot.get_context(msg)
+        await ctx.send("Bard gotowy do śpiewania!")
+
+        player = self.get_player(ctx)
+        print("Player ready...")
+        channel = await player.connect(ctx, voice_channel)
+
+        for query in list:
+            query = str(query)
+            print("Single query: " +query)
+            if not player.is_connected:
+                await player.connect(ctx)
+
+            if query is None:
+                pass
+
+            else:
+                query = query.strip("<>")
+                if not re.match(URL_REGEX, query):
+                    query = f"ytsearch: {query}"
+                await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+
+    @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if not member.bot and after.channel is None:
             if not [m for m in before.channel.members if not m.bot]:
@@ -192,6 +248,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node):
         print(f"Wavelink node '{node.identifier}' ready.")
+        await asyncio.sleep(3)
 
     @wavelink.WavelinkMixin.listener("on_track_stuck")
     @wavelink.WavelinkMixin.listener("on_track_end")
@@ -228,7 +285,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     async def start_nodes(self):
         await self.bot.wait_until_ready()
-
+        print("Starting node..")
         nodes = {
             "MAIN" : {
                 "host": "127.0.0.1",
@@ -245,8 +302,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     def get_player(self, obj):
         if isinstance(obj, commands.Context):
+            print("isinstance")
+            print(obj.guild.id)
             return self.wavelink.get_player(obj.guild.id, cls=Player, context=obj)
         elif isinstance(obj, discord.Guild):
+            print("not isinstance")
             return self.wavelink.get_player(obj.id, cls=Player)
 
     @commands.command(name="connect")
