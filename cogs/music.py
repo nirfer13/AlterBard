@@ -16,6 +16,10 @@ OPTIONS = {
     "4⃣": 3,
     "5⃣": 4,
 }
+VOTES = {
+    "✅": 0,
+    "❌": 1
+}
 
 class AlreadyConnectedToChannel(commands.CommandError):
     pass
@@ -30,6 +34,12 @@ class NoTracksFound(commands.CommandError):
     pass
 
 class NoMoreTracks(commands.CommandError):
+    pass
+
+class DuplicatedTrack(commands.CommandError):
+    pass
+
+class InvalidTrackName(commands.CommandError):
     pass
 
 class Queue:
@@ -194,7 +204,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         print("Channel acquired.")
 
         #Create Fantasy Playlist
-        with open('fantasy_list.txt') as f:
+        with open('test_list.txt') as f:
             fantasy_list = f.read().splitlines()
 
         #Create Party Playlist
@@ -356,7 +366,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         print("Channel acquired.")
 
         #Create Fantasy Playlist
-        with open('fantasy_list.txt') as f:
+        with open('test_list.txt') as f:
             fantasy_list = f.read().splitlines()
 
         #Create Party Playlist
@@ -401,7 +411,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await player.stop()
         await ctx.send("Muzyka wstrzymana.")
 
-    @commands.command(name="next", aliases=["skip"])
+    @commands.command(name="next", aliases=["skip", "nastepna"])
     async def next_command(self, ctx):
         player = self.get_player(ctx)
 
@@ -411,7 +421,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await player.stop()
         await ctx.send("Kolejny utwór w kolejce...")
 
-    @commands.command(name="queue")
+    @commands.command(name="queue", aliases=["kolejka", "playlist", "playlista"])
     async def queue_command(self, ctx, show: t.Optional[int] = 10):
         player = self.get_player(ctx)
 
@@ -440,6 +450,109 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def queue_command_error(self, ctx, exc):
         if isinstance(exc, QueueIsEmpty):
             await ctx.send("Kolejka jest pusta.")
+
+    @commands.command(name="dodaj")
+    @commands.has_permissions(administrator=True)
+    async def addsong_command(self, ctx, query: t.Optional[str], playlist: bool=True):
+        player = self.get_player(ctx)
+
+        if not player.is_connected:
+            await player.connect(ctx)
+
+        if query is None:
+            pass
+
+        else:
+            query = query.strip("<>")
+            textToFile = query
+            if not re.match(URL_REGEX, query):
+                query = f"ytsearch: {query}"
+
+            await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+
+        strQuery = str(query)
+        if playlist:
+            file = "fantasy_list.txt"
+        else:
+            file = "party_list.txt"
+
+        with open(file, "a") as file_object:
+            # Append 'hello' at the end of file
+            file_object.write(f"\n{textToFile}")
+        await ctx.send(f"Utwór dopisany do pliku {file}.")
+
+    @commands.command(name="fantasy")
+    async def addsong_command(self, ctx, query: t.Optional[str]):
+        print(query)
+        player = self.get_player(ctx)
+
+        if not player.is_connected:
+            await player.connect(ctx)
+
+        if query is None:
+            pass
+
+        else:
+            file = "test_list.txt"
+            with open("test_list.txt", "r") as f:
+                lines = f.read().splitlines()
+
+            if query in lines:
+                await ctx.send("Utwór już występuje w playliście, więc nie został dopisany.")
+                raise DuplicatedTrack
+                return False
+
+        def _check(r, u):
+            return(
+                r.emoji in VOTES.keys()
+                and r.message.id == msg.id
+            )
+
+        embed = discord.Embed(
+            title="Czy chcecie dodać utwór do playlisty fantasy?",
+            description=(f"\nPamiętacje, że w playliście powinny znaleźć się utwory z gier/filmów, które wpasowują się w tematykę fantasy i są przyjemne do posłuchania w tle.\nProponowany utwór: {query}"),
+            color=ctx.author.color,
+            timestamp=dt.datetime.utcnow()
+        )
+        embed.set_footer(text=f"Dodana przez {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+
+        msg = await ctx.send(embed=embed)
+        cache_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
+        for emoji in list(VOTES.keys()):
+            await msg.add_reaction(emoji)
+
+        posReaction = 0
+        negReaction = 0
+        try:
+            while (posReaction < 4 and negReaction < 4):
+                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=20, check=_check)
+                    print(cache_msg.reactions)
+                    posReaction = cache_msg.reactions[0].count
+                    negReaction = cache_msg.reactions[1].count
+
+            if posReaction >=4:
+                await msg.delete()
+                await ctx.message.delete()
+                
+                query = query.strip("<>")
+                textToFile = query
+                if not re.match(URL_REGEX, query):
+                    query = f"ytsearch: {query}"
+
+                await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+
+                with open(file, "a") as file_object:
+                    # Append 'hello' at the end of file
+                    file_object.write(f"\n{textToFile}")
+                await ctx.send(f"Utwór dopisany do playlisty fantasy.")
+            else:
+                await msg.delete()
+                await ctx.message.delete()
+
+        except asyncio.TimeoutError:
+            await msg.delete()
+            await ctx.message.delete()
+
         
 
 def setup(bot):
