@@ -1,8 +1,9 @@
 import asyncio
 import datetime as dt
+import json
+import random
 import re
 import typing as t
-import random
 
 import discord
 import wavelink
@@ -209,7 +210,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         print("Channel acquired.")
 
         #Create Fantasy Playlist
-        with open('test_list.txt') as f:
+        with open('fantasy_list.txt') as f:
             fantasy_list = f.read().splitlines()
 
         #Create Party Playlist
@@ -323,6 +324,68 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             print("not isinstance")
             return self.wavelink.get_player(obj.id, cls=Player)
 
+    async def check_track(self, ctx, player: wavelink.Player, query: str, file: str="fantasy_list.txt"):
+        
+        with open(file, "r") as f:
+            lines = f.read().splitlines()
+
+        if len(query.split()) <= 1:
+            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
+            raise InvalidTrackName
+            return False
+
+        if query in lines:
+            await ctx.send("<@" + str(ctx.author.id) + "> Utwór już występuje w playliście, więc nie został dopisany.")
+            raise DuplicatedTrack
+            return False
+
+        query = query.strip("<>")
+        if not re.match(URL_REGEX, query):
+            query = f"ytsearch: {query}"
+
+        query = await player.get_track(ctx, await self.wavelink.get_tracks(query))
+
+        if query is None:
+            return False
+        
+        if query.duration/60/1000 > 9:
+            await ctx.send("<@" + str(ctx.author.id) + "> Utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
+            raise LongTrack
+            return False
+
+        return True
+
+    async def bard_support(self, ctx):
+    
+    # function to add to JSON
+        filename="authors_list.json"
+        with open(filename,'r+') as file:
+            # First we load existing data into a dict.
+            file_data = json.load(file)
+            # Sets file's current position at offset.
+            file.seek(0)
+
+            id = str(ctx.author.id)
+            if id in file_data.keys():
+                print("Id in file.")
+                file_data[id] += 1
+                if file_data[id] >= 5:
+                    print("Rola dodana.")
+                    role = discord.utils.get(ctx.guild.roles, id=1054138582811549776)
+                    user = ctx.guild.get_member(int(id))
+                    await user.add_roles(role)
+            else:
+                print("Id not in file.")
+                file_data[id] = 1
+
+            print(file_data)
+            json_object = json.dumps(file_data, indent=4)
+            file.write(json_object)
+ 
+        await ctx.send("<@" + str(ctx.author.id)+ ">, Twój utwór został pomyślnie dodany do playlisty. Pomogłeś Staśkowi " + str(file_data[id]) + " razy!")
+        if file_data[id] == 5:
+            await ctx.send("Za wkład w muzyczny rozwój naszego barda otrzymałeś specjalną rangę!")
+
     async def voting(self, ctx, player: wavelink.Player, query: wavelink.Track, file: str="fantasy_list.txt"):
 
         if file == "fantasy_list.txt":
@@ -354,23 +417,23 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         posReaction = 0
         negReaction = 0
         try:
-            while (posReaction < 2 and negReaction < 2):
-                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=20, check=_check)
+            while (posReaction < 5 and negReaction < 5):
+                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*8, check=_check)
                     print(cache_msg.reactions)
                     posReaction = cache_msg.reactions[0].count
                     negReaction = cache_msg.reactions[1].count
 
-            if posReaction >=2:
+            if posReaction >=5:
                 await msg.delete()
                 await ctx.message.delete()
 
                 player.queue.add(query)
 
-                #TODO Write to json file
+                await self.bard_support(ctx)
 
                 with open(file, "a") as file_object:
                     file_object.write(f"\n{query}")
-                await ctx.send(f"Utwór dopisany do playlisty " + playlist + ".")
+                await ctx.send(f"Utwór " + query + " dopisany do playlisty " + playlist + ".")
             else:
                 await msg.delete()
                 await ctx.message.delete()
@@ -426,7 +489,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         print("Channel acquired.")
 
         #Create Fantasy Playlist
-        with open('test_list.txt') as f:
+        with open('fantasy_list.txt') as f:
             fantasy_list = f.read().splitlines()
 
         #Create Party Playlist
@@ -542,45 +605,38 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await ctx.send(f"Utwór dopisany do pliku {file}.")
 
     @commands.command(name="fantasy")
-    async def addsong_command(self, ctx, query: t.Optional[str]):
+    async def addfantasy_command(self, ctx, query: t.Optional[str]):
         player = self.get_player(ctx)
 
         if not player.is_connected:
             await player.connect(ctx)
-
         else:
-            file = "test_list.txt"
-            with open("test_list.txt", "r") as f:
-                lines = f.read().splitlines()
+            check = await self.check_track(ctx, player, query, "fantasy_list.txt")
+            if check:
+                await self.voting(ctx, player, query, "fantasy_list.txt")
+            else:
+                pass
 
-            if len(query.split()) <= 1:
-                await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
-                raise InvalidTrackName
-                return False
+    @commands.command(name="party", aliases=["impreza"])
+    async def addparty_command(self, ctx, query: t.Optional[str]):
+        player = self.get_player(ctx)
 
-            if query in lines:
-                await ctx.send("<@" + str(ctx.author.id) + "> Utwór już występuje w playliście, więc nie został dopisany.")
-                raise DuplicatedTrack
-                return False
+        if not player.is_connected:
+            await player.connect(ctx)
+        else:
+            check = await self.check_track(ctx, player, query, "party_list.txt")
+            if check:
+                await self.voting(ctx, player, query, "party_list.txt")
+            else:
+                pass
 
-        query = query.strip("<>")
-        if not re.match(URL_REGEX, query):
-            query = f"ytsearch: {query}"
+    @addfantasy_command.error
+    async def addfantasy_error(self, ctx, error):
+        if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
+            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
 
-        query = await player.get_track(ctx, await self.wavelink.get_tracks(query))
-
-        if query is None:
-            return False
-        
-        if query.duration/60/1000 > 9:
-            await ctx.send("<@" + str(ctx.author.id) + "> Utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
-            raise LongTrack
-            return False
-
-        await self.voting(ctx, player, query, "test_list.txt")
-
-    @addsong_command.error
-    async def addsong_error(self, ctx, error):
+    @addparty_command.error
+    async def addfantasy_error(self, ctx, error):
         if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
             await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
     
