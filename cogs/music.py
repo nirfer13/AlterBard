@@ -403,7 +403,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         embed = discord.Embed(
             title="Czy chcecie dodać utwór do playlisty " + playlist + "?",
-            description=(f"\nPamiętacje, że w playliście powinny znaleźć się utwory, które wpasowują się w tematykę i nie są nadto specyficzne.\n\nProponowany utwór: **{query}**"),
+            description=(f"\nPamiętacje, że w playliście powinny znaleźć się utwory, które wpasowują się w tematykę i nie są nadto specyficzne.\n\nProponowany utwór: **{query}**\nPrzesłuchajcie i zagłosujcie!"),
             color=ctx.author.color,
             timestamp=dt.datetime.utcnow()
         )
