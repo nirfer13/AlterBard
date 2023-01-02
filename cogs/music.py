@@ -394,7 +394,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             playlist = "impreza"
         else:
             playlist = "test"
-
+        msg2 = ctx.message
         def _check(r, u):
             return(
                 r.emoji in VOTES.keys()
@@ -416,31 +416,31 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         posReaction = 0
         negReaction = 0
+        votesReq = 5
         try:
-            while (posReaction < 5 and negReaction < 5):
+            while (posReaction < votesReq and negReaction < votesReq):
                     reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*8, check=_check)
                     print(cache_msg.reactions)
                     posReaction = cache_msg.reactions[0].count
                     negReaction = cache_msg.reactions[1].count
 
-            if posReaction >=5:
+            if posReaction >= votesReq:
                 await msg.delete()
                 await ctx.message.delete()
 
                 player.queue.add(query)
-
                 await self.bard_support(ctx)
-
+                print("Playlist")
                 with open(file, "a") as file_object:
                     file_object.write(f"\n{query}")
                 await ctx.send(f"Utwór " + query + " dopisany do playlisty " + playlist + ".")
             else:
-                await msg.delete()
                 await ctx.message.delete()
+                await msg.delete()
 
         except asyncio.TimeoutError:
-            await msg.delete()
             await ctx.message.delete()
+            await msg.delete()
 
     @commands.command(name="connect")
     async def connect_command(self, ctx, *, channel: t.Optional[discord.VoiceChannel]):
@@ -619,7 +619,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="party", aliases=["impreza"])
     async def addparty_command(self, ctx, query: t.Optional[str]):
-        player = self.get_player(ctx)
+        player = self.get_player(ctx)        
 
         if not player.is_connected:
             await player.connect(ctx)
@@ -636,7 +636,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
 
     @addparty_command.error
-    async def addfantasy_error(self, ctx, error):
+    async def addparty_error(self, ctx, error):
         if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
             await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
     
