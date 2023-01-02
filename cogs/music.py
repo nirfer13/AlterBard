@@ -42,6 +42,9 @@ class DuplicatedTrack(commands.CommandError):
 class InvalidTrackName(commands.CommandError):
     pass
 
+class LongTrack(commands.CommandError):
+    pass
+
 class Queue:
     def __init__(self):
         self._queue = []
@@ -122,9 +125,7 @@ class Player(wavelink.Player):
         except KeyError:
             pass
 
-    async def add_tracks(self, ctx, tracks):
-        print(tracks)
-        print(type(tracks))
+    async def add_singletrack(self, ctx, tracks):
         if not tracks:
             raise NoTracksFound
 
@@ -133,49 +134,9 @@ class Player(wavelink.Player):
         else:
             self.queue.add(tracks[0])
             await ctx.send(f"Dodano {tracks[0].title} do kolejki.")
-    #     else:
-    #         if (track := await self.choose_track(ctx, tracks)) is not None:
-    #             self.queue.add(track)
-    #             await ctx.send(f"Added {track.title} to the queue.")
 
         if not self.is_playing and not self.queue.is_empty:
             await self.start_playback()
-
-    # async def choose_track(self, ctx, tracks):
-    #     def _check(r, u):
-    #         return(
-    #             r.emoji in OPTIONS.keys()
-    #             and u == ctx.author
-    #             and r.message.id == msg.id
-    #         )
-
-    #     embed = discord.Embed(
-    #         title="Choose a song",
-    #         description=(
-    #             "\n".join(
-    #                 f"**{i+1}.** {t.title} ({t.length//60000}:{str(t.length%60).zfill(2)})"
-    #                 for i, t in enumerate(tracks[:5])
-    #             )
-    #         ),
-    #         color=ctx.author.color,
-    #         timestamp=dt.datetime.utcnow()
-    #     )
-    #     embed.set_author(name="query Results")
-    #     embed.set_footer(text=f"Invoked by {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
-
-    #     msg = await ctx.send(embed=embed)
-    #     for emoji in list(OPTIONS.keys())[:min(len(tracks), len(OPTIONS))]:
-    #         await msg.add_reaction(emoji)
-
-    #     try:
-    #         reaction, _ = await self.bot.wait_for("reaction_add", timeout=60, check=_check)
-    #     except asyncio.TimeoutError:
-    #         await msg.delete()
-    #         await ctx.message.delete()
-    #     else:
-    #         await msg.delete()
-    #         return tracks[OPTIONS[reaction.emoji]]
-
 
     async def start_playback(self):
         await self.play(self.queue.first_track)
@@ -186,6 +147,50 @@ class Player(wavelink.Player):
                 await self.play(track)
         except QueueIsEmpty:
             pass
+
+    async def get_track(self, ctx, tracks):
+        if not tracks:
+            raise NoTracksFound
+
+        if len(tracks) == 1:
+            return tracks[0]
+        else:
+            if (track := await self.choose_track(ctx, tracks)) is not None:
+                return track
+
+    async def choose_track(self, ctx, tracks):
+        def _check(r, u):
+            return (
+                r.emoji in OPTIONS.keys()
+                and u == ctx.author
+                and r.message.id == msg.id
+            )
+
+        embed = discord.Embed(
+            title="Znaleziono kilka odpowiadających propozycji. Wybierz jedną.",
+            description=(
+                "\n".join(
+                    f"**{i+1}.** {t.title} ({t.length//60000}:{str(t.length%60).zfill(2)})"
+                    for i, t in enumerate(tracks[:5])
+                )
+            ),
+            colour=ctx.author.colour,
+            timestamp=dt.datetime.utcnow()
+        )
+        embed.set_footer(text=f"Dodany przez {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+
+        msg = await ctx.send(embed=embed)
+        for emoji in list(OPTIONS.keys())[:min(len(tracks), len(OPTIONS))]:
+            await msg.add_reaction(emoji)
+
+        try:
+            reaction, _ = await self.bot.wait_for("reaction_add", timeout=60.0, check=_check)
+        except asyncio.TimeoutError:
+            await msg.delete()
+            await ctx.message.delete()
+        else:
+            await msg.delete()
+            return tracks[OPTIONS[reaction.emoji]]
 
 class Music(commands.Cog, wavelink.WavelinkMixin):
     def __init__(self, bot):
@@ -247,7 +252,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 query = query.strip("<>")
                 if not re.match(URL_REGEX, query):
                     query = f"ytsearch: {query}"
-                await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+                await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -258,7 +263,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node):
         print(f"Wavelink node '{node.identifier}' ready.")
-        await asyncio.sleep(3)
 
     @wavelink.WavelinkMixin.listener("on_track_stuck")
     @wavelink.WavelinkMixin.listener("on_track_end")
@@ -319,6 +323,62 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             print("not isinstance")
             return self.wavelink.get_player(obj.id, cls=Player)
 
+    async def voting(self, ctx, player: wavelink.Player, query: wavelink.Track, file: str="fantasy_list.txt"):
+
+        if file == "fantasy_list.txt":
+            playlist = "fantasy"
+        elif file == "party_list.txt":
+            playlist = "impreza"
+        else:
+            playlist = "test"
+
+        def _check(r, u):
+            return(
+                r.emoji in VOTES.keys()
+                and r.message.id == msg.id
+            )
+
+        embed = discord.Embed(
+            title="Czy chcecie dodać utwór do playlisty " + playlist + "?",
+            description=(f"\nPamiętacje, że w playliście powinny znaleźć się utwory, które wpasowują się w tematykę i nie są nadto specyficzne.\n\nProponowany utwór: **{query}**"),
+            color=ctx.author.color,
+            timestamp=dt.datetime.utcnow()
+        )
+        embed.set_footer(text=f"Dodana przez {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+
+        msg = await ctx.send(embed=embed)
+        cache_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
+        for emoji in list(VOTES.keys()):
+            await msg.add_reaction(emoji)
+
+        posReaction = 0
+        negReaction = 0
+        try:
+            while (posReaction < 2 and negReaction < 2):
+                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=20, check=_check)
+                    print(cache_msg.reactions)
+                    posReaction = cache_msg.reactions[0].count
+                    negReaction = cache_msg.reactions[1].count
+
+            if posReaction >=2:
+                await msg.delete()
+                await ctx.message.delete()
+
+                player.queue.add(query)
+
+                #TODO Write to json file
+
+                with open(file, "a") as file_object:
+                    file_object.write(f"\n{query}")
+                await ctx.send(f"Utwór dopisany do playlisty " + playlist + ".")
+            else:
+                await msg.delete()
+                await ctx.message.delete()
+
+        except asyncio.TimeoutError:
+            await msg.delete()
+            await ctx.message.delete()
+
     @commands.command(name="connect")
     async def connect_command(self, ctx, *, channel: t.Optional[discord.VoiceChannel]):
         player = self.get_player(ctx)
@@ -353,7 +413,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             if not re.match(URL_REGEX, query):
                 query = f"ytsearch: [query]"
 
-            await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+            await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
     @commands.command(name="radio")
     async def radio_command(self, ctx):
@@ -402,7 +462,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 if not re.match(URL_REGEX, query):
                     query = f"ytsearch: {query}"
                 print(type(query))
-                await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+                await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
     @commands.command(name="stop")
     async def stop_command(self, ctx):
@@ -468,7 +528,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             if not re.match(URL_REGEX, query):
                 query = f"ytsearch: {query}"
 
-            await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+            await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
         strQuery = str(query)
         if playlist:
@@ -483,77 +543,46 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.command(name="fantasy")
     async def addsong_command(self, ctx, query: t.Optional[str]):
-        print(query)
         player = self.get_player(ctx)
 
         if not player.is_connected:
             await player.connect(ctx)
-
-        if query is None:
-            pass
 
         else:
             file = "test_list.txt"
             with open("test_list.txt", "r") as f:
                 lines = f.read().splitlines()
 
+            if len(query.split()) <= 1:
+                await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
+                raise InvalidTrackName
+                return False
+
             if query in lines:
-                await ctx.send("Utwór już występuje w playliście, więc nie został dopisany.")
+                await ctx.send("<@" + str(ctx.author.id) + "> Utwór już występuje w playliście, więc nie został dopisany.")
                 raise DuplicatedTrack
                 return False
 
-        def _check(r, u):
-            return(
-                r.emoji in VOTES.keys()
-                and r.message.id == msg.id
-            )
+        query = query.strip("<>")
+        if not re.match(URL_REGEX, query):
+            query = f"ytsearch: {query}"
 
-        embed = discord.Embed(
-            title="Czy chcecie dodać utwór do playlisty fantasy?",
-            description=(f"\nPamiętacje, że w playliście powinny znaleźć się utwory z gier/filmów, które wpasowują się w tematykę fantasy i są przyjemne do posłuchania w tle.\nProponowany utwór: {query}"),
-            color=ctx.author.color,
-            timestamp=dt.datetime.utcnow()
-        )
-        embed.set_footer(text=f"Dodana przez {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+        query = await player.get_track(ctx, await self.wavelink.get_tracks(query))
 
-        msg = await ctx.send(embed=embed)
-        cache_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
-        for emoji in list(VOTES.keys()):
-            await msg.add_reaction(emoji)
-
-        posReaction = 0
-        negReaction = 0
-        try:
-            while (posReaction < 4 and negReaction < 4):
-                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=20, check=_check)
-                    print(cache_msg.reactions)
-                    posReaction = cache_msg.reactions[0].count
-                    negReaction = cache_msg.reactions[1].count
-
-            if posReaction >=4:
-                await msg.delete()
-                await ctx.message.delete()
-                
-                query = query.strip("<>")
-                textToFile = query
-                if not re.match(URL_REGEX, query):
-                    query = f"ytsearch: {query}"
-
-                await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
-
-                with open(file, "a") as file_object:
-                    # Append 'hello' at the end of file
-                    file_object.write(f"\n{textToFile}")
-                await ctx.send(f"Utwór dopisany do playlisty fantasy.")
-            else:
-                await msg.delete()
-                await ctx.message.delete()
-
-        except asyncio.TimeoutError:
-            await msg.delete()
-            await ctx.message.delete()
-
+        if query is None:
+            return False
         
+        if query.duration/60/1000 > 9:
+            await ctx.send("<@" + str(ctx.author.id) + "> Utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
+            raise LongTrack
+            return False
 
+        await self.voting(ctx, player, query, "test_list.txt")
+
+    @addsong_command.error
+    async def addsong_error(self, ctx, error):
+        if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
+            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
+    
 def setup(bot):
     bot.add_cog(Music(bot))
