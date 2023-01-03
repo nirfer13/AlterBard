@@ -9,6 +9,11 @@ import discord
 import wavelink
 from discord.ext import commands
 
+global VoteChannelID, VoiceChannelID, LogChannelID
+VoteChannelID = 1028340292895645696
+VoiceChannelID = 1056200069952589924
+LogChannelID = 1057198781206106153
+
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 OPTIONS = {
     "1️⃣": 0,
@@ -134,7 +139,6 @@ class Player(wavelink.Player):
             self.queue.add(*tracks.tracks)
         else:
             self.queue.add(tracks[0])
-            await ctx.send(f"Dodano {tracks[0].title} do kolejki.")
 
         if not self.is_playing and not self.queue.is_empty:
             await self.start_playback()
@@ -188,7 +192,6 @@ class Player(wavelink.Player):
             reaction, _ = await self.bot.wait_for("reaction_add", timeout=60.0, check=_check)
         except asyncio.TimeoutError:
             await msg.delete()
-            await ctx.message.delete()
         else:
             await msg.delete()
             return tracks[OPTIONS[reaction.emoji]]
@@ -206,7 +209,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         #Weekly ranking task create
         #self.task2 = self.bot.loop.create_task(self.msg1())
         await asyncio.sleep(15)
-        voice_channel = self.bot.get_channel(1056200069952589924)
+        voice_channel = self.bot.get_channel(VoiceChannelID)
         print("Channel acquired.")
 
         #Create Fantasy Playlist
@@ -231,7 +234,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         #print(list)
 
         #function to get context
-        channel = self.bot.get_channel(1057198781206106153)
+        channel = self.bot.get_channel(LogChannelID)
         msg = await channel.fetch_message(1057204065706188820)
         ctx = await self.bot.get_context(msg)
         await ctx.send("Bard gotowy do śpiewania!")
@@ -335,7 +338,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return False
 
         if query in lines:
-            await ctx.send("<@" + str(ctx.author.id) + "> Utwór już występuje w playliście, więc nie został dopisany.")
+            await ctx.send("<@" + str(ctx.author.id) + ">, mam już taki utwór w repertuarze, więc musisz wybrać coś innego.")
             raise DuplicatedTrack
             return False
 
@@ -349,52 +352,70 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return False
         
         if query.duration/60/1000 > 9:
-            await ctx.send("<@" + str(ctx.author.id) + "> Utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
+            await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
             raise LongTrack
             return False
 
         return True
 
-    async def bard_support(self, ctx):
+    async def bard_support(self, ctx, users: set, author: discord.User, success: bool):
     
-    # function to add to JSON
         filename="authors_list.json"
+        Channel = self.bot.get_channel(VoteChannelID)
+
         with open(filename,'r+') as file:
             # First we load existing data into a dict.
             file_data = json.load(file)
+           
+            for user in users:
+                id = str(user.id)
+                if id != str(author.id):
+                    if id in file_data.keys():
+                        file_data[id] += 0.25
+                    else:
+                        file_data[id] = 0.25
+
+            if success:
+                id = str(author.id)
+                if id in file_data.keys():
+                    file_data[id] += 1
+                else:
+                    file_data[id] = 1
+
+            json_object = json.dumps(file_data, indent=4)
             # Sets file's current position at offset.
             file.seek(0)
-
-            id = str(ctx.author.id)
-            if id in file_data.keys():
-                print("Id in file.")
-                file_data[id] += 1
-                if file_data[id] >= 5:
-                    print("Rola dodana.")
-                    role = discord.utils.get(ctx.guild.roles, id=1054138582811549776)
-                    user = ctx.guild.get_member(int(id))
-                    await user.add_roles(role)
-            else:
-                print("Id not in file.")
-                file_data[id] = 1
-
-            print(file_data)
-            json_object = json.dumps(file_data, indent=4)
+            file.truncate(0) # need '0' when using r+
             file.write(json_object)
- 
-        await ctx.send("<@" + str(ctx.author.id)+ ">, Twój utwór został pomyślnie dodany do playlisty. Pomogłeś Staśkowi " + str(file_data[id]) + " razy!")
-        if file_data[id] == 5:
-            await ctx.send("Za wkład w muzyczny rozwój naszego barda otrzymałeś specjalną rangę!")
+
+        if success:
+            await Channel.send("<@" + str(ctx.author.id)+ ">, Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[id]) + " razy!")
+            if file_data[id] == 5:
+                role = discord.utils.get(ctx.guild.roles, id=983798433590673448)
+                await ctx.author.add_roles(role)
+                await Channel.send("Za wkład w mój muzyczny rozwój otrzymałeś rangę mojego pomagiera!")
+            if file_data[id] == 20:
+                role = discord.utils.get(ctx.guild.roles, id=1059766781889228820)
+                await ctx.author.add_roles(role)
+                await Channel.send("Widzę,że nie odpuszczasz. W nagrodę dostałeś rangę Młodszego Barda!")
+            if file_data[id] == 50:
+                role = discord.utils.get(ctx.guild.roles, id=1059766769524424714)
+                await ctx.author.add_roles(role)
+                await Channel.send("Czekaj... Czy Ty chcesz mnie wygryźć? Dobra, możesz być moim zastępcą, ok?")
+
 
     async def voting(self, ctx, player: wavelink.Player, query: wavelink.Track, file: str="fantasy_list.txt"):
 
         if file == "fantasy_list.txt":
-            playlist = "fantasy"
+            playlist = "FANTASY"
+            embedurl='https://www.altermmo.pl/wp-content/uploads/altermmo-5-112-1.png'
         elif file == "party_list.txt":
-            playlist = "impreza"
+            playlist = "IMPREZA"
+            embedurl='https://www.altermmo.pl/wp-content/uploads/Drunk.png'
         else:
             playlist = "test"
-        msg2 = ctx.message
+            embedurl='https://www.altermmo.pl/wp-content/uploads/altermmo-2-112.png'
+
         def _check(r, u):
             return(
                 r.emoji in VOTES.keys()
@@ -403,43 +424,50 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         embed = discord.Embed(
             title="Czy chcecie dodać utwór do playlisty " + playlist + "?",
-            description=(f"\nPamiętacje, że w playliście powinny znaleźć się utwory, które wpasowują się w tematykę i nie są nadto specyficzne.\n\nProponowany utwór: **{query}**\nPrzesłuchajcie i zagłosujcie!"),
+            description=(f"\nPamiętacje, że w playliście powinny znaleźć się utwory, które wpasowują się w tematykę i nie są nadto specyficzne.\n\nProponowany utwór: **{query}**\n\nPrzesłuchajcie i zagłosujcie!"),
             color=ctx.author.color,
             timestamp=dt.datetime.utcnow()
         )
+        embed.set_thumbnail(url=embedurl)
         embed.set_footer(text=f"Dodana przez {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
-
-        msg = await ctx.send(embed=embed)
+        Channel = self.bot.get_channel(VoteChannelID)
+        msg = await Channel.send(embed=embed)
         cache_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
+
         for emoji in list(VOTES.keys()):
             await msg.add_reaction(emoji)
 
         posReaction = 0
         negReaction = 0
-        votesReq = 5
+        votesReq = 2
         try:
             while (posReaction < votesReq and negReaction < votesReq):
-                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*8, check=_check)
-                    print(cache_msg.reactions)
+                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*12, check=_check)
                     posReaction = cache_msg.reactions[0].count
                     negReaction = cache_msg.reactions[1].count
 
             if posReaction >= votesReq:
+                reactions = cache_msg.reactions[0]
+                reacters = set()
+                async for user in reactions.users():
+                    reacters.add(user)
+                print(reacters)
+                await self.bard_support(ctx, reacters, ctx.author, True)
                 await msg.delete()
-                await ctx.message.delete()
 
-                player.queue.add(query)
-                await self.bard_support(ctx)
                 print("Playlist")
                 with open(file, "a") as file_object:
                     file_object.write(f"\n{query}")
-                await ctx.send(f"Utwór " + query + " dopisany do playlisty " + playlist + ".")
+                await Channel.send(f"Utwór " + query + " dopisany do repertuaru " + playlist + ".")
             else:
-                await ctx.message.delete()
+                reactions = cache_msg.reactions[1]
+                reacters = set()
+                async for user in reactions.users():
+                    reacters.add(user)
+                await self.bard_support(ctx, reacters, ctx.author, False)
                 await msg.delete()
 
         except asyncio.TimeoutError:
-            await ctx.message.delete()
             await msg.delete()
 
     @commands.command(name="connect")
@@ -605,6 +633,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await ctx.send(f"Utwór dopisany do pliku {file}.")
 
     @commands.command(name="fantasy")
+    @commands.cooldown(2, 60*60*23, commands.BucketType.user)
     async def addfantasy_command(self, ctx, query: t.Optional[str]):
         player = self.get_player(ctx)
 
@@ -618,8 +647,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 pass
 
     @commands.command(name="party", aliases=["impreza"])
+    @commands.cooldown(2, 60*60*23, commands.BucketType.user)
     async def addparty_command(self, ctx, query: t.Optional[str]):
-        player = self.get_player(ctx)        
+        player = self.get_player(ctx) 
 
         if not player.is_connected:
             await player.connect(ctx)
@@ -630,15 +660,21 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             else:
                 pass
 
-    @addfantasy_command.error
-    async def addfantasy_error(self, ctx, error):
-        if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
-            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
+    # @addfantasy_command.error
+    # async def addfantasy_cooldown(self, ctx, error):
+    #     if isinstance(error, commands.CommandOnCooldown):
+    #         print("Command on cooldown.")
+    #         await ctx.send('Poczekaj na odnowienie komendy! Poczekaj ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y.')
+    #     if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
+    #         await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
 
-    @addparty_command.error
-    async def addparty_error(self, ctx, error):
-        if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
-            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
+    # @addparty_command.error
+    # async def addparty_cooldown(self, ctx, error):
+    #     if isinstance(error, commands.CommandOnCooldown):
+    #         print("Command on cooldown.")
+    #         await ctx.send('Poczekaj na odnowienie komendy! Poczekaj ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y.')
+    #     elif isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
+    #         await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")  
     
 def setup(bot):
     bot.add_cog(Music(bot))
