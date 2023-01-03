@@ -374,6 +374,38 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await ctx.send("<@" + str(ctx.author.id)+ ">, pomogłeś mi " + str(file_data[id]) + " razy! Dziena!")
 
+    async def ranking_bard_support(self, ctx):
+        
+        filename="authors_list.json"
+
+        with open(filename,'r') as file:
+            # First we load existing data into a dict.
+            file_data = json.load(file)
+
+            id = str(ctx.author.id)
+            if id in file_data.keys():
+                pass
+            else:
+                file_data[id] = 0
+
+            ranking = dict(sorted(file_data.items(), key=lambda item: item[1], reverse=True))
+
+        rankingString = ""
+        x=1
+        for Person in ranking.items():
+            user = self.bot.get_user(int(Person[0]))
+            if user:
+                rankingString += str(x) + ". **" + user.name + "** - " + str(Person[1]) + " pkt.\n"
+                x+=1
+                if x >= 6:
+                    break
+
+        #Embed create   
+        emb=discord.Embed(title='Ranking pomocników barda Staśka!', description=rankingString, color=0xCE7E00)
+        emb.set_thumbnail(url="https://www.altermmo.pl/wp-content/uploads/BardLogo.png")
+        emb.set_footer(text='Oby gust muzyczny był z Wami!')
+        await ctx.send(embed=emb)
+
 
     async def bard_support(self, ctx, users: set, author: discord.User, success: bool):
     
@@ -696,6 +728,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @commands.command(name="bardcheck", aliases=["ilepomoglem"])
     async def bardcheck_command(self, ctx):
         await self.check_bard_support(ctx)
+
+    @commands.command(name="bardranking", aliases=["rankingbarda"])
+    async def bardrankingcommand(self, ctx):
+        await self.ranking_bard_support(ctx)
+
 
 def setup(bot):
     bot.add_cog(Music(bot))
