@@ -358,6 +358,23 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         return True
 
+    async def check_bard_support(self, ctx):
+        
+        filename="authors_list.json"
+
+        with open(filename,'r') as file:
+            # First we load existing data into a dict.
+            file_data = json.load(file)
+
+            id = str(ctx.author.id)
+            if id in file_data.keys():
+                pass
+            else:
+                file_data[id] = 0
+
+        await ctx.send("<@" + str(ctx.author.id)+ ">, pomogłeś mi " + str(file_data[id]) + " razy! Dziena!")
+
+
     async def bard_support(self, ctx, users: set, author: discord.User, success: bool):
     
         filename="authors_list.json"
@@ -393,11 +410,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             if file_data[id] == 5:
                 role = discord.utils.get(ctx.guild.roles, id=983798433590673448)
                 await ctx.author.add_roles(role)
-                await Channel.send("Za wkład w mój muzyczny rozwój otrzymałeś rangę mojego pomagiera!")
+                await Channel.send("Za wkład w mój muzyczny rozwój otrzymałeś rangę mojego pomagiera! Kto wie, pomagaj mi dalej, a czeka Cię nagroda.")
             if file_data[id] == 20:
                 role = discord.utils.get(ctx.guild.roles, id=1059766781889228820)
                 await ctx.author.add_roles(role)
-                await Channel.send("Widzę,że nie odpuszczasz. W nagrodę dostałeś rangę Młodszego Barda!")
+                await Channel.send("Widzę,że nie odpuszczasz. W nagrodę dostałeś rangę Młodszego Barda! Może już wystarczy?")
             if file_data[id] == 50:
                 role = discord.utils.get(ctx.guild.roles, id=1059766769524424714)
                 await ctx.author.add_roles(role)
@@ -675,6 +692,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     #         await ctx.send('Poczekaj na odnowienie komendy! Poczekaj ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y.')
     #     elif isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
     #         await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")  
-    
+
+    @commands.command(name="bardcheck", aliases=["ilepomoglem"])
+    async def bardcheck_command(self, ctx):
+        await self.check_bard_support(ctx)
+
 def setup(bot):
     bot.add_cog(Music(bot))
