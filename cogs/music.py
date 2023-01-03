@@ -7,12 +7,19 @@ import typing as t
 
 import discord
 import wavelink
-from discord.ext import commands
+from discord.ext import commands, tasks
 
-global VoteChannelID, VoiceChannelID, LogChannelID
-VoteChannelID = 1028340292895645696
+global VoteChannelID, AnnouceChannelID, CommandChannelID, VoiceChannelID, LogChannelID, BardID, GuildID
+#VoteChannelID = 1028340292895645696 #Debug
+VoteChannelID = 1059731255786229770
+#AnnouceChannelID = 1028340292895645696 #Debug
+AnnouceChannelID = 696932659833733131
+#CommandChannelID = 1057198781206106153 #Debug
+CommandChannelID = 776379796367212594
 VoiceChannelID = 1056200069952589924
 LogChannelID = 1057198781206106153
+BardID = 1004008220437778523
+GuildID = 686137998177206281
 
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 OPTIONS = {
@@ -206,8 +213,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def on_ready(self):
         print("Bot ready...")
 
-        #Weekly ranking task create
-        #self.task2 = self.bot.loop.create_task(self.msg1())
         await asyncio.sleep(15)
         voice_channel = self.bot.get_channel(VoiceChannelID)
         print("Channel acquired.")
@@ -220,18 +225,24 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         with open('party_list.txt') as g:
             party_list = g.read().splitlines()
 
-        #Check timestamp and start task
-        self.task = self.bot.loop.create_task(self.msg1())
+        LogChannel = self.bot.get_channel(LogChannelID)
+        VoiceChannel = self.bot.get_channel(VoiceChannelID)
+        guild = self.bot.get_guild(GuildID)
+        userBot = guild.get_member(BardID)
 
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
-            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
+            await VoiceChannel.edit(name="TYRALNIA!!!")
+            await LogChannel.send("Zmiana playlisty na imprezową.")
+            await userBot.edit(nick="DJ Stachu")
         else:
             list = fantasy_list
-            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
+            await VoiceChannel.edit(name="Scena Barda")
+            await LogChannel.send("Zmiana playlisty na fantasy.")
+            await userBot.edit(nick="Bard Stasiek")
+
         random.shuffle(list)
-        #print(list)
 
         #function to get context
         channel = self.bot.get_channel(LogChannelID)
@@ -248,15 +259,17 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             print("Single query: " +query)
             if not player.is_connected:
                 await player.connect(ctx)
-
             if query is None:
                 pass
-
             else:
                 query = query.strip("<>")
                 if not re.match(URL_REGEX, query):
                     query = f"ytsearch: {query}"
                 await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
+        
+        #Check timestamp and start task
+        self.task = self.bot.loop.create_task(self.msg1(ctx, player, party_list, fantasy_list))
+        print("Task started.")
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -275,24 +288,78 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await payload.player.advance()
 
     #Check timestamp task
-    async def msg1(self):
-        while self.is_playing == True:
-            global list
-            print("Loop check 1.")
+    async def msg1(self, ctx, player: wavelink.Player, party_list: list, fantasy_list: list):
+        print("Loop check 1.")
+        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+        actDay = timestamp.strftime("%a")
+        print("Actual day: " + str(actDay))
+
+        while True:
+            print("Inside infinite loop.")
+
             timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
-            if timestamp.strftime("%a") == "Fri":
+            if timestamp.strftime("%a") == "Fri" and actDay != "Fri":
+                actDay = "Fri"
+
+                LogChannel = self.bot.get_channel(LogChannelID)
+                VoiceChannel = self.bot.get_channel(VoiceChannelID)
+                AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
+                await VoiceChannel.edit(name="TYRALNIA!!!")
+                await LogChannel.send("Zmiana playlisty na imprezową.")
+                await AnnouceChannel.send("HALO, HALO! Tutaj DJ Stachu! Jesteście ze mną? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
+                guild = self.bot.get_guild(GuildID)
+                userBot = guild.get_member(BardID)
+                await userBot.edit(nick="DJ Stachu")
+
                 list = party_list
-                # Setting `Playing ` status
-                #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
-            else:
+                random.shuffle(list)
+                player.queue.empty()
+                await player.stop()
+                
+                for query in list:
+                    query = str(query)
+                    print("Single query: " +query)
+                    if not player.is_connected:
+                        await player.connect(ctx)
+                    if query is None:
+                        pass
+                    else:
+                        query = query.strip("<>")
+                        if not re.match(URL_REGEX, query):
+                            query = f"ytsearch: {query}"
+                        await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
+
+            elif timestamp.strftime("%a") != "Fri" and actDay == "Fri":
+                actDay = timestamp.strftime("%a")
+
+                LogChannel = self.bot.get_channel(LogChannelID)
+                VoiceChannel = self.bot.get_channel(VoiceChannelID)
+                await VoiceChannel.edit(name="Scena Barda")
+                await LogChannel.send("Zmiana playlisty na fantasy.")
+                guild = self.bot.get_guild(GuildID)
+                userBot = guild.get_member(BardID)
+                await userBot.edit(nick="Bard Stasiek")
+
                 list = fantasy_list
-                # Setting `Playing ` status
-                #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
-            random.shuffle(list)
-            
-            # wait some time before another loop. Don't make it more than 60 sec or it will skip
+                player.queue.empty()
+                await player.stop()
+                random.shuffle(list)
+                
+                for query in list:
+                    query = str(query)
+                    print("Single query: " +query)
+                    if not player.is_connected:
+                        await player.connect(ctx)
+                    if query is None:
+                        pass
+                    else:
+                        query = query.strip("<>")
+                        if not re.match(URL_REGEX, query):
+                            query = f"ytsearch: {query}"
+                        await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
+
             print("Loop check 2.")
-            await asyncio.sleep(600)
+            await asyncio.sleep(3600)
 
     async def cog_check(self, ctx):
         if isinstance(ctx.channel, discord.DMChannel):
@@ -300,6 +367,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return False
 
         return True
+
+    async def is_channel(ctx):
+        return ctx.channel.id == CommandChannelID or ctx.channel.id == 1057198781206106153
 
     async def start_nodes(self):
         await self.bot.wait_until_ready()
@@ -488,7 +558,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         posReaction = 0
         negReaction = 0
-        votesReq = 2
+        votesReq = 5
         try:
             while (posReaction < votesReq and negReaction < votesReq):
                     reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*12, check=_check)
@@ -556,6 +626,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
     @commands.command(name="radio")
+    @commands.has_permissions(administrator=True)
     async def radio_command(self, ctx):
 
         #Define globals
@@ -574,7 +645,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             party_list = g.read().splitlines()
 
         #Check timestamp and start task
-        self.task = self.bot.loop.create_task(self.msg1())
+        self.task = self.bot.loop.create_task(self.msg1(ctx, player, party_list, fantasy_list))
 
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
@@ -605,6 +676,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
     @commands.command(name="stop")
+    @commands.has_permissions(administrator=True)
     async def stop_command(self, ctx):
         player =self.get_player(ctx)
         player.queue.empty()
@@ -612,6 +684,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await ctx.send("Muzyka wstrzymana.")
 
     @commands.command(name="next", aliases=["skip", "nastepna"])
+    @commands.check(is_channel)
     async def next_command(self, ctx):
         player = self.get_player(ctx)
 
@@ -622,6 +695,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await ctx.send("Kolejny utwór w kolejce...")
 
     @commands.command(name="queue", aliases=["kolejka", "playlist", "playlista"])
+    @commands.check(is_channel)
     async def queue_command(self, ctx, show: t.Optional[int] = 10):
         player = self.get_player(ctx)
 
@@ -682,6 +756,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         await ctx.send(f"Utwór dopisany do pliku {file}.")
 
     @commands.command(name="fantasy")
+    @commands.check(is_channel)
     @commands.cooldown(2, 60*60*23, commands.BucketType.user)
     async def addfantasy_command(self, ctx, query: t.Optional[str]):
         player = self.get_player(ctx)
@@ -696,6 +771,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 pass
 
     @commands.command(name="party", aliases=["impreza"])
+    @commands.check(is_channel)
     @commands.cooldown(2, 60*60*23, commands.BucketType.user)
     async def addparty_command(self, ctx, query: t.Optional[str]):
         player = self.get_player(ctx) 
@@ -709,27 +785,29 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             else:
                 pass
 
-    # @addfantasy_command.error
-    # async def addfantasy_cooldown(self, ctx, error):
-    #     if isinstance(error, commands.CommandOnCooldown):
-    #         print("Command on cooldown.")
-    #         await ctx.send('Poczekaj na odnowienie komendy! Poczekaj ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y.')
-    #     if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
-    #         await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
+    @addfantasy_command.error
+    async def addfantasy_cooldown(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            print("Command on cooldown.")
+            await ctx.send('Poczekaj na odnowienie komendy! Poczekaj ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y.')
+        if isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
+            await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")
 
-    # @addparty_command.error
-    # async def addparty_cooldown(self, ctx, error):
-    #     if isinstance(error, commands.CommandOnCooldown):
-    #         print("Command on cooldown.")
-    #         await ctx.send('Poczekaj na odnowienie komendy! Poczekaj ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y.')
-    #     elif isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
-    #         await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")  
+    @addparty_command.error
+    async def addparty_cooldown(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            print("Command on cooldown.")
+            await ctx.send('Poczekaj na odnowienie komendy! Poczekaj ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y.')
+        elif isinstance(error, commands.ExpectedClosingQuoteError) or isinstance(error, commands.CommandInvokeError):
+            await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"*.")  
 
     @commands.command(name="bardcheck", aliases=["ilepomoglem"])
+    @commands.check(is_channel)
     async def bardcheck_command(self, ctx):
         await self.check_bard_support(ctx)
 
     @commands.command(name="bardranking", aliases=["rankingbarda"])
+    @commands.check(is_channel)
     async def bardrankingcommand(self, ctx):
         await self.ranking_bard_support(ctx)
 
