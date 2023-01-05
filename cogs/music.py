@@ -269,7 +269,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         for query in list:
             query = str(query)
-            print("Single query: " +query)
+            print("Single query: " + query)
             if not player.is_connected:
                 await player.connect(ctx)
             if query is None:
@@ -433,7 +433,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         if not re.match(URL_REGEX, query):
             query = f"ytsearch: {query}"
 
-        query = await player.get_track(ctx, await self.wavelink.get_tracks(query), file)
+        x=0
+        preQuery = None
+        while x<5 and preQuery is None:
+            x+=1
+            preQuery = await self.wavelink.get_tracks(query)
+            print(type(preQuery))
+        query = await player.get_track(ctx, preQuery, file)
         print(query.title)
         if query is None:
             return None
@@ -528,7 +534,6 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             role2 = discord.utils.get(ctx.guild.roles, id=1059766781889228820) #Mlodszy Bard 
             role3 = discord.utils.get(ctx.guild.roles, id=1059766769524424714) #Zastepca Barda
 
-            print("Before rewards after voting.")
             for user in users:
                 id = str(user.id)
                 if id in file_data.keys() and user.id != 1004008220437778523:
@@ -545,7 +550,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                         await Channel.send("<@" + str(user.id) + ">! Czekaj... Czy Ty chcesz mnie wygryźć? Dobra, możesz być moim zastępcą, ok? <:MonkaS:882181709100097587> ")
 
         if success:
-            await Channel.send("<@" + str(ctx.author.id)+ ">, Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[id]) + " razy!")
+            await Channel.send(str(author.name)+ ", Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[str(author.id)]) + " razy!")
 
 
     async def voting(self, ctx, player: wavelink.Player, query, file: str="fantasy_list.txt"):
@@ -601,13 +606,22 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 async for user in reactions.users():
                     reacters.add(user)
                 print(reacters)
-                await self.bard_support(ctx, reacters, ctx.author, True)
                 await msg.delete()
+                await self.bard_support(ctx, reacters, ctx.author, True)
 
-                print("Playlist")
                 with open(file, "a") as file_object:
                     file_object.write(f"\n{query}")
-                await Channel.send(f"Utwór " + query + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
+                
+                await Channel.send("Utwór " + str(query.title) + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
+                try:
+                    if query is not None:
+                        print("Player")
+                        player.queue.add(query)
+                        await Channel.send(f"Dodano {query} do kolejki.")
+                except:
+                    pass
+                
+                
             else:
                 print("Negative reactions won.")
                 reactions = cache_msg.reactions[1]
