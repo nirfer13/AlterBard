@@ -317,7 +317,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
                 AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
-                await VoiceChannel.edit(name="TYRALNIA!!!")
+                await VoiceChannel.edit(name="MORDOWNIA!!!")
                 await LogChannel.send("Zmiana playlisty na imprezową.")
                 await AnnouceChannel.send("HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
                 guild = self.bot.get_guild(GuildID)
@@ -331,7 +331,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 
                 for query in list:
                     query = str(query)
-                    print("Single query: " +query)
+                    print("Single query: " + query)
                     if not player.is_connected:
                         await player.connect(ctx)
                     if query is None:
@@ -550,16 +550,21 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                         await Channel.send("<@" + str(user.id) + ">! Czekaj... Czy Ty chcesz mnie wygryźć? Dobra, możesz być moim zastępcą, ok? <:MonkaS:882181709100097587> ")
 
         if success:
-            await Channel.send(str(author.name)+ ", Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[str(author.id)]) + " razy!")
+            await Channel.send("<@" + str(author.id)+ ">, Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[str(author.id)]) + " razy!")
 
 
     async def voting(self, ctx, player: wavelink.Player, query, file: str="fantasy_list.txt"):
-
+        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+        add = False
         if file == "fantasy_list.txt":
+            if timestamp.strftime("%a") != "Fri":
+                add = True
             playlist = "FANTASY <:Up:912798893304086558><:Loot:912797849916436570>"
             embedurl='https://www.altermmo.pl/wp-content/uploads/altermmo-5-112-1.png'
             color = 0x77ff00
         elif file == "party_list.txt":
+            if timestamp.strftime("%a") == "Fri":
+                add = True
             playlist = "IMPREZA <a:RainbowPls:882184531917037608><a:RainbowPls:882184531917037608><a:RainbowPls:882184531917037608>"
             embedurl='https://www.altermmo.pl/wp-content/uploads/Drunk.png'
             color = 0xff0011
@@ -613,14 +618,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                     file_object.write(f"\n{query}")
                 
                 await Channel.send("Utwór " + str(query.title) + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
-                try:
+                if add:
                     if query is not None:
                         print("Player")
                         player.queue.add(query)
-                        await Channel.send(f"Dodano {query} do kolejki.")
-                except:
-                    pass
-                
+                        await Channel.send(f"Dodano {query} do kolejki.")             
                 
             else:
                 print("Negative reactions won.")
