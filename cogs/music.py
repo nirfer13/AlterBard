@@ -20,7 +20,7 @@ VoiceChannelID = 1056200069952589924
 LogChannelID = 1057198781206106153
 BardID = 1004008220437778523
 GuildID = 686137998177206281
-votesReq = 6
+votesReq = 5
 
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 OPTIONS = {
@@ -278,14 +278,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 query = query.strip("<>")
                 if not re.match(URL_REGEX, query):
                     query = f"ytsearch: {query}"
-                x=0
-                preQuery = None
-                while x<5 and preQuery is None:
-                    x+=1
-                    preQuery = await self.wavelink.get_tracks(query)
-                    print(type(preQuery))
-                query = preQuery
-                await player.add_singletrack(ctx, query)
+                await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
         
         #Check timestamp and start task
         self.task = self.bot.loop.create_task(self.msg1(ctx, player, party_list, fantasy_list))
@@ -347,14 +340,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                         query = query.strip("<>")
                         if not re.match(URL_REGEX, query):
                             query = f"ytsearch: {query}"
-                        x=0
-                        preQuery = None
-                        while x<5 and preQuery is None:
-                            x+=1
-                            preQuery = await self.wavelink.get_tracks(query)
-                            print(type(preQuery))
-                        query = preQuery
-                        await player.add_singletrack(ctx, query)
+                        await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
             elif timestamp.strftime("%a") != "Fri" and actDay == "Fri":
                 actDay = timestamp.strftime("%a")
@@ -383,14 +369,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                         query = query.strip("<>")
                         if not re.match(URL_REGEX, query):
                             query = f"ytsearch: {query}"
-                        x=0
-                        preQuery = None
-                        while x<5 and preQuery is None:
-                            x+=1
-                            preQuery = await self.wavelink.get_tracks(query)
-                            print(type(preQuery))
-                        query = preQuery
-                        await player.add_singletrack(ctx, query)
+                        await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
             print("Loop check 2.")
             await asyncio.sleep(3600)
@@ -442,7 +421,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return None
 
         if len(query.split()) <= 1:
-            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł i wykonawcę utworu podaj w cudzysłowie. Fraza musi mieć więcej niż jedno słowo np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"* .")
+            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"* .")
             raise InvalidTrackName
             return None
 
@@ -524,7 +503,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def bard_support(self, ctx, users: set, author: discord.User, success: bool):
     
         filename="authors_list.json"
-        Channel = self.bot.get_channel(CommandChannelID)
+        Channel = self.bot.get_channel(VoteChannelID)
 
         with open(filename,'r+') as file:
             # First we load existing data into a dict.
@@ -637,13 +616,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
                 with open(file, "a") as file_object:
                     file_object.write(f"\n{query}")
-                Channel = self.bot.get_channel(CommandChannelID)
+                
                 await Channel.send("Utwór " + str(query.title) + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
                 if add:
                     if query is not None:
                         print("Player")
                         player.queue.add(query)
-                        #await Channel.send(f"Dodano {query} do kolejki.")             
+                        await Channel.send(f"Dodano {query} do kolejki.")             
                 
             else:
                 print("Negative reactions won.")
