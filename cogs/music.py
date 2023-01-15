@@ -141,6 +141,7 @@ class Player(wavelink.Player):
 
     async def add_singletrack(self, ctx, tracks):
         if not tracks:
+
             raise NoTracksFound
 
         if isinstance(tracks, wavelink.TrackPlaylist):
@@ -278,7 +279,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 query = query.strip("<>")
                 if not re.match(URL_REGEX, query):
                     query = f"ytsearch: {query}"
-                await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
+
+                x=0
+                preQuery = None
+                while x<5 and preQuery is None:
+                    x+=1
+                    preQuery = await self.wavelink.get_tracks(query)
+                await player.add_singletrack(ctx, preQuery)
         
         #Check timestamp and start task
         self.task = self.bot.loop.create_task(self.msg1(ctx, player, party_list, fantasy_list))
@@ -349,7 +356,14 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                         query = query.strip("<>")
                         if not re.match(URL_REGEX, query):
                             query = f"ytsearch: {query}"
-                        await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
+
+                        x=0
+                        preQuery = None
+                        while x<5 and preQuery is None:
+                            x+=1
+                            preQuery = await self.wavelink.get_tracks(query)
+                            print(type(preQuery))
+                        await player.add_singletrack(ctx, preQuery)
 
             elif timestamp.strftime("%a") != "Fri" and actDay == "Fri":
                 actDay = timestamp.strftime("%a")
@@ -378,7 +392,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                         query = query.strip("<>")
                         if not re.match(URL_REGEX, query):
                             query = f"ytsearch: {query}"
-                        await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
+                        x=0
+                        preQuery = None
+                        while x<5 and preQuery is None:
+                            x+=1
+                            preQuery = await self.wavelink.get_tracks(query)
+                        await player.add_singletrack(ctx, preQuery)
 
             print("Loop check 2.")
             await asyncio.sleep(3600)
@@ -743,7 +762,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 query = query.strip("<>")
                 if not re.match(URL_REGEX, query):
                     query = f"ytsearch: {query}"
-                await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
+                x=0
+                preQuery = None
+                while x<5 and preQuery is None:
+                    x+=1
+                    preQuery = await self.wavelink.get_tracks(query)
+                await player.add_singletrack(ctx, preQuery)
 
     @commands.command(name="stop")
     @commands.has_permissions(administrator=True)
