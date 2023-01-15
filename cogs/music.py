@@ -20,7 +20,7 @@ VoiceChannelID = 1056200069952589924
 LogChannelID = 1057198781206106153
 BardID = 1004008220437778523
 GuildID = 686137998177206281
-votesReq = 5
+votesReq = 6
 
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 OPTIONS = {
@@ -125,7 +125,7 @@ class Player(wavelink.Player):
 
     async def connect(self, ctx, channel=None):
         if self.is_connected:
-            raise AlreadyConnectedToChannel
+            await self.disconnect()
 
         if (channel := getattr(ctx.author.voice, "channel", channel)) is None:
             raise NoVoiceChannel
@@ -286,9 +286,18 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        if not member.bot and after.channel is None:
-            if not [m for m in before.channel.members if not m.bot]:
-                pass
+        if not member.bot:
+            voice_channel = self.bot.get_channel(VoiceChannelID)
+            channel = self.bot.get_channel(LogChannelID)
+            msg = await channel.fetch_message(1057204065706188820)
+            ctx = await self.bot.get_context(msg)
+            player = self.get_player(ctx)
+            current_voice_channel = self.bot.get_channel(player.channel_id)
+
+            if current_voice_channel.id != VoiceChannelID and not [m for m in current_voice_channel.members if not m.bot]:
+            
+                print("Changing voice channel automatically.")
+                channel = await player.connect(ctx, voice_channel)
 
     @wavelink.WavelinkMixin.listener()
     async def on_node_ready(self, node):
@@ -451,6 +460,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         return query
 
+    async def singme(self, ctx, player: wavelink.Player):
+        player = self.get_player(ctx)
+        print("Player changing the voice channel.")
+        voice_channel = self.bot.get_channel(VoiceChannelID)
+        channel = await player.connect(ctx, voice_channel)
+
+
     async def check_bard_support(self, ctx):
         
         filename="authors_list.json"
@@ -503,7 +519,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     async def bard_support(self, ctx, users: set, author: discord.User, success: bool):
     
         filename="authors_list.json"
-        Channel = self.bot.get_channel(VoteChannelID)
+        Channel = self.bot.get_channel(CommandChannelID)
 
         with open(filename,'r+') as file:
             # First we load existing data into a dict.
@@ -616,13 +632,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
                 with open(file, "a") as file_object:
                     file_object.write(f"\n{query}")
-                
+                Channel = self.bot.get_channel(CommandChannelID)
                 await Channel.send("Utwór " + str(query.title) + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
                 if add:
                     if query is not None:
                         print("Player")
                         player.queue.add(query)
-                        await Channel.send(f"Dodano {query} do kolejki.")             
+                        #await Channel.send(f"Dodano {query} do kolejki.")             
                 
             else:
                 print("Negative reactions won.")
@@ -676,11 +692,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @commands.has_permissions(administrator=True)
     async def radio_command(self, ctx):
 
-        #Define globals
-        global list, party_list, fantasy_list
-        global voice_channel
-
-        voice_channel = self.bot.get_channel(1056200069952589924)
+        voice_channel = self.bot.get_channel(VoiceChannelID)
         print("Channel acquired.")
 
         #Create Fantasy Playlist
@@ -691,35 +703,46 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         with open('party_list.txt') as g:
             party_list = g.read().splitlines()
 
-        #Check timestamp and start task
-        self.task = self.bot.loop.create_task(self.msg1(ctx, player, party_list, fantasy_list))
+        LogChannel = self.bot.get_channel(LogChannelID)
+        VoiceChannel = self.bot.get_channel(VoiceChannelID)
+        guild = self.bot.get_guild(GuildID)
+        userBot = guild.get_member(BardID)
 
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
-            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Pi\u0105tkowa Vixa"))
+            await VoiceChannel.edit(name="TYRALNIA!!!")
+            await LogChannel.send("Zmiana playlisty na imprezową.")
+            await userBot.edit(nick="DJ Stachu")
         else:
             list = fantasy_list
-            #await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Klimaty RPG"))
+            await VoiceChannel.edit(name="Scena Barda")
+            await LogChannel.send("Zmiana playlisty na fantasy.")
+            await userBot.edit(nick="Bard Stasiek")
+
         random.shuffle(list)
-        print(list)
+
+        #function to get context
+        channel = self.bot.get_channel(LogChannelID)
+        msg = await channel.fetch_message(1057204065706188820)
+        ctx = await self.bot.get_context(msg)
+        await ctx.send("Bard gotowy do śpiewania!")
 
         player = self.get_player(ctx)
+        print("Player ready...")
         channel = await player.connect(ctx, voice_channel)
 
         for query in list:
             query = str(query)
+            print("Single query: " + query)
             if not player.is_connected:
                 await player.connect(ctx)
-
             if query is None:
                 pass
-
             else:
                 query = query.strip("<>")
                 if not re.match(URL_REGEX, query):
                     query = f"ytsearch: {query}"
-                print(type(query))
                 await player.add_singletrack(ctx, await self.wavelink.get_tracks(query))
 
     @commands.command(name="stop")
@@ -860,6 +883,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @commands.check(is_channel)
     async def bardrankingcommand(self, ctx):
         await self.ranking_bard_support(ctx)
+
+    @commands.command(name="singme", aliases=["zagrajmi"])
+    @commands.check(is_channel)
+    async def singme_command(self, ctx):
+        player = self.get_player(ctx)
+        await self.singme(ctx, player)
 
     @commands.command(name="test")
     @commands.has_permissions(administrator=True)
