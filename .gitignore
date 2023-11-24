@@ -1,3 +1,5 @@
 *.env
 Lavalink.jar
 nohup.out
+.venv
+*.pyc

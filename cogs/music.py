@@ -232,11 +232,11 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         print("Channel acquired.")
 
         #Create Fantasy Playlist
-        with open('fantasy_list.txt') as f:
+        with open('fantasy_list.txt', encoding="utf8") as f:
             fantasy_list = f.read().splitlines()
 
         #Create Party Playlist
-        with open('party_list.txt') as g:
+        with open('party_list.txt', encoding="utf8") as g:
             party_list = g.read().splitlines()
 
         LogChannel = self.bot.get_channel(LogChannelID)

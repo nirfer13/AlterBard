@@ -25,7 +25,7 @@ async def on_command_error(self, ctx, exc):
 
 #loads cogs as extentions to bot
 if __name__ == '__main__':
-    for file in os.listdir("/usr/local/bin/AlterBard/cogs"):
+    for file in os.listdir("C:\\Programowanie\\AlterBard\\cogs"):
         if file.endswith(".py"):
             extension = file[:-3]
             try:
@@ -35,5 +35,3 @@ if __name__ == '__main__':
                 exception = f"{type(e).__name__}: {e}"
                 print(f"Failed to load extension {extension}\n{exception}")
     bot.run(os.environ.get("TOKEN"))
-
-
