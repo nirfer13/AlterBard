@@ -196,6 +196,7 @@ class Music(commands.Cog):
         msg = await channel.fetch_message(1177811269164748872)
         ctx = await self.bot.get_context(msg)
         await channel.send("Bard gotowy do śpiewania!")
+        await self.delete_bard_messages()
         await self.setup_hook()
 
         self.player = Player(bot=self.bot)
@@ -291,6 +292,17 @@ class Music(commands.Cog):
     async def is_channel(ctx):
         return ctx.channel.id == CommandChannelID or ctx.channel.id == 1057198781206106153
     
+    async def delete_bard_messages(self):
+        """Delete bard vote messages."""
+
+        vote_channel = self.bot.get_channel(VoteChannelID)
+        counter = 0
+        async for message in vote_channel.history(limit=15):
+            if message.author == self.bot.user:
+                await message.delete()
+
+        print(f"MESSAGES COUNT {counter}")
+
     async def singme(self, ctx, player: wavelink.Player):
         print("Player changing the voice channel.")
         voice_channel = self.bot.get_channel(VoiceChannelID)
