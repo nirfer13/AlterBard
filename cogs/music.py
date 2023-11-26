@@ -16,13 +16,13 @@ VoteChannelID = 1059731255786229770
 AnnouceChannelID = 696932659833733131
 #CommandChannelID = 1057198781206106153 #Debug
 CommandChannelID = 776379796367212594
-#VoiceChannelID = 1056200069952589924 # Kanał Staśka
-VoiceChannelID = 687630935419912204
+VoiceChannelID = 1056200069952589924 # Kanał Staśka
+#VoiceChannelID = 687630935419912204
 LogChannelID = 1057198781206106153
 BardID = 1004008220437778523
 GuildID = 686137998177206281
-#votesReq = 6
-votesReq = 2
+votesReq = 6
+#votesReq = 2
 
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 OPTIONS = {
@@ -89,7 +89,8 @@ class Player(wavelink.Player):
     async def start_playback(self):
         """Get first track from the queue and start playing."""
 
-        await self.play(self.queue.get())
+        if not self.queue.is_empty:
+            await self.play(self.queue.get())
 
     async def get_track(self, ctx, tracks, file: str="fantasy_list.txt") -> wavelink.YouTubeTrack:
         """Show currently playing track."""
@@ -180,12 +181,12 @@ class Music(commands.Cog):
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
-            await VoiceChannel.edit(name="Patron - TYRALNIA!!!")
+            await VoiceChannel.edit(name="Vixapol!!!")
             await LogChannel.send("Zmiana playlisty na imprezową.")
             await userBot.edit(nick="DJ Stachu")
         else:
             list = fantasy_list
-            await VoiceChannel.edit(name="Patron - Scena Barda")
+            await VoiceChannel.edit(name="Scena Barda")
             await LogChannel.send("Zmiana playlisty na fantasy.")
             await userBot.edit(nick="Bard Stasiek")
 
@@ -220,6 +221,95 @@ class Music(commands.Cog):
                 except Exception as e:
                     print("Exception: %s", e)
 
+        # Check timestamp and start task
+        self.task = self.bot.loop.create_task(self.msg1(ctx, self.player, party_list, fantasy_list))
+
+    #Check timestamp task
+    async def msg1(self, ctx, player: wavelink.Player, party_list: list, fantasy_list: list):
+        print("Loop check 1.")
+        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+        actDay = timestamp.strftime("%a")
+        print("Actual day: " + str(actDay))
+
+        while True:
+            print("Inside infinite loop.")
+
+            timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+            print(timestamp.strftime("%H:%M"))
+            if timestamp.strftime("%a") == "Fri" and actDay != "Fri":
+                actDay = "Fri"
+
+                LogChannel = self.bot.get_channel(LogChannelID)
+                VoiceChannel = self.bot.get_channel(VoiceChannelID)
+                AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
+                await VoiceChannel.edit(name="MORDOWNIA!!!")
+                await LogChannel.send("Zmiana playlisty na imprezową.")
+                await AnnouceChannel.send("HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
+                guild = self.bot.get_guild(GuildID)
+                userBot = guild.get_member(BardID)
+                await userBot.edit(nick="DJ Stachu")
+
+                list = party_list
+                random.shuffle(list)
+                await player.stop()
+                player.queue.reset()
+                player.queue.loop_all = True
+                
+                for query in list:
+                    query = str(query)
+                    print("Single query: " + query)
+                    if not self.player.is_connected():
+                        vc: Player = await VoiceChannel.connect(cls=self.player)
+                    if query is None:
+                        pass
+                    else:
+                        query = query.strip("<>")
+                        try:
+                            if not re.match(URL_REGEX, query):
+                                tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(
+                                                                                                    query)
+
+                            await self.player.add_singletrack(tracks)
+                        except Exception as e:
+                            print("Exception: %s", e)
+
+            elif (timestamp.strftime("%a") != "Fri" and actDay == "Fri"):
+                
+                actDay = timestamp.strftime("%a")
+
+                LogChannel = self.bot.get_channel(LogChannelID)
+                VoiceChannel = self.bot.get_channel(VoiceChannelID)
+                await VoiceChannel.edit(name="Scena Barda")
+                await LogChannel.send("Zmiana playlisty na fantasy.")
+                guild = self.bot.get_guild(GuildID)
+                userBot = guild.get_member(BardID)
+                await userBot.edit(nick="Bard Stasiek")
+
+                list = fantasy_list
+                await player.stop()
+                player.queue.reset()
+                player.queue.loop_all = True
+                random.shuffle(list)
+                
+                for query in list:
+                    query = str(query)
+                    print("Single query: " + query)
+                    if not self.player.is_connected():
+                        vc: Player = await VoiceChannel.connect(cls=self.player)
+                    if query is None:
+                        pass
+                    else:
+                        query = query.strip("<>")
+                        try:
+                            if not re.match(URL_REGEX, query):
+                                tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(
+                                                                                                    query)
+
+                            await self.player.add_singletrack(tracks)
+                        except Exception as e:
+                            print("Exception: %s", e)
+            print("Loop check 2.")
+            await asyncio.sleep(3600)
 
     async def setup_hook(self) -> None:
         # Wavelink 2.0 has made connecting Nodes easier... Simply create each Node
@@ -249,20 +339,9 @@ class Music(commands.Cog):
 
         print(tracks[0])
         track: wavelink.YouTubeTrack = tracks[0]
-        
 
         await vc.play(track)
         print("Playing song...")
-
-
-    @commands.command("next")
-    async def disconnect(self, ctx: commands.Context) -> None:
-        """Simple disconnect command.
-
-        This command assumes there is a currently connected Player.
-        """
-        vc: wavelink.Player = ctx.voice_client
-        await vc.disconnect()
 
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackEventPayload):
@@ -282,7 +361,7 @@ class Music(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
         if not member.bot:
             voice_channel = self.bot.get_channel(VoiceChannelID)
-            current_voice_channel = self.bot.get_channel(self.player.channel.id)
+            current_voice_channel = self.player.bot.voice_clients[0].channel
 
             if current_voice_channel.id != VoiceChannelID and not [m for m in current_voice_channel.members if not m.bot]:
             
@@ -384,7 +463,7 @@ class Music(commands.Cog):
             if user:
                 rankingString += str(x) + ". **" + user.name + "** - " + str(Person[1]) + " pkt.\n"
                 x+=1
-                if x >= 6:
+                if x >= 11:
                     break
 
         #Embed create   
@@ -582,6 +661,56 @@ class Music(commands.Cog):
 
         await self.player.move_to(channel)
 
+    @commands.command(name="next", aliases=["skip", "nastepna"])
+    @commands.cooldown(1, 60*30, commands.BucketType.user)
+    @commands.check(is_channel)
+    async def next_command(self, ctx):
+
+        await self.player.queue.put_wait(self.player.current)
+        await self.player.stop()
+        await ctx.send("Kolejny utwór w kolejce...")
+
+    @next_command.error
+    async def next_command_cooldown(self, ctx, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            print("Command on cooldown.")
+            await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60, 2)) + ' minut <:Bedge:970576892874854400>.')
+
+    @commands.command(name="bardranking", aliases=["rankingbarda"])
+    @commands.check(is_channel)
+    async def bardrankingcommand(self, ctx):
+        await self.ranking_bard_support(ctx)
+
+    @commands.command(name="bardcheck", aliases=["ilepomoglem"])
+    @commands.check(is_channel)
+    async def bardcheck_command(self, ctx):
+        await self.check_bard_support(ctx)
+
+    @commands.command(name="queue", aliases=["kolejka", "playlist", "playlista"])
+    @commands.check(is_channel)
+    async def queue_command(self, ctx, show: t.Optional[int] = 10):
+
+        if self.player.queue.is_empty:
+            raise QueueIsEmpty
+
+        embed = discord.Embed(
+            title="Kolejka",
+            description=f"Pokazuje następne {show} utworów.",
+            color=ctx.author.color,
+            timestamp=dt.datetime.utcnow()
+        )
+        embed.set_author(name="Informacje o kolejce")
+        embed.set_footer(text=f"{ctx.author.display_name}", icon_url=ctx.author.avatar)
+        embed.add_field(name="Aktualnie gra", value=self.player.current.title, inline=False)
+
+        if upcoming := str(self.player.queue)[2:-2].split("\", \""):
+            embed.add_field(
+                name="Następny",
+                value="\n".join(t[1:-1] for t in upcoming[:show]),
+                inline=False
+            )
+
+        msg = await ctx.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
