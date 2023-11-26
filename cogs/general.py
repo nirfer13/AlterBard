@@ -20,7 +20,7 @@ class general(commands.Cog, name="general"):
             description=f"The bot latency is {round(self.bot.latency * 1000)}ms.",
             color=0x42F34C)
         await ctx.send(embed=embed)
-		
+
     # Just debug action, printing to console when ready and logged in.
     @commands.Cog.listener()
     async def on_ready(self):
@@ -28,5 +28,5 @@ class general(commands.Cog, name="general"):
         print('Logged in as:  ', self.bot.user)
         print('ID:  ', self.bot.user.id)
 
-def setup(bot):
-    bot.add_cog(general(bot))
+async def setup(bot):
+    await bot.add_cog(general(bot))
