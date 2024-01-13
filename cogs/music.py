@@ -75,13 +75,21 @@ class Player(wavelink.Player):
         except KeyError:
             pass
 
-    async def add_singletrack(self, tracks):
+    async def add_singletrack(self, tracks: list[wavelink.YouTubeTrack]):
         """Add a single track to the queue."""
 
         if not tracks:
             raise NoTracksFound
 
-        await self.queue.put_wait(tracks[0])
+        if len(tracks) > 1:
+            for track in tracks:
+                if track.duration/60/1000 < 9:
+                    await self.queue.put_wait(tracks[0])
+                    break
+                else:
+                    pass
+        else:
+            await self.queue.put_wait(tracks[0])
 
         if not self.is_playing() and not self.queue.is_empty:
             await self.start_playback()
@@ -161,68 +169,8 @@ class Music(commands.Cog):
     async def on_ready(self):
         print("Bot ready...")
 
-        await asyncio.sleep(15)
-        voice_channel = self.bot.get_channel(VoiceChannelID)
-        print("Channel acquired.")
-
-        #Create Fantasy Playlist
-        with open('fantasy_list.txt', encoding="utf8") as f:
-            fantasy_list = f.read().splitlines()
-
-        #Create Party Playlist
-        with open('party_list.txt', encoding="utf8") as g:
-            party_list = g.read().splitlines()
-
-        LogChannel = self.bot.get_channel(LogChannelID)
-        VoiceChannel: discord.VoiceChannel = self.bot.get_channel(VoiceChannelID)
-        guild = self.bot.get_guild(GuildID)
-        userBot = guild.get_member(BardID)
-
-        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
-        if timestamp.strftime("%a") == "Fri":
-            list = party_list
-            await VoiceChannel.edit(name="Vixapol!!!")
-            await LogChannel.send("Zmiana playlisty na imprezową.")
-            await userBot.edit(nick="DJ Stachu")
-        else:
-            list = fantasy_list
-            await VoiceChannel.edit(name="Scena Barda")
-            await LogChannel.send("Zmiana playlisty na fantasy.")
-            await userBot.edit(nick="Bard Stasiek")
-
-        random.shuffle(list)
-
-        #function to get context
-        channel = self.bot.get_channel(LogChannelID)
-        msg = await channel.fetch_message(1177811269164748872)
-        ctx = await self.bot.get_context(msg)
-        await channel.send("Bard gotowy do śpiewania!")
         await self.delete_bard_messages()
         await self.setup_hook()
-
-        self.player = Player(bot=self.bot)
-        vc: Player = await VoiceChannel.connect(cls=self.player)
-
-        for query in list:
-            query = str(query)
-            print("Single query: " + query)
-            if not self.player.is_connected():
-                vc: Player = await VoiceChannel.connect(cls=self.player)
-            if query is None:
-                pass
-            else:
-                query = query.strip("<>")
-                try:
-                    if not re.match(URL_REGEX, query):
-                        tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(
-                                                                                            query)
-
-                    await self.player.add_singletrack(tracks)
-                except Exception as e:
-                    print("Exception: %s", e)
-
-        # Check timestamp and start task
-        self.task = self.bot.loop.create_task(self.msg1(ctx, self.player, party_list, fantasy_list))
 
     #Check timestamp task
     async def msg1(self, ctx, player: wavelink.Player, party_list: list, fantasy_list: list):
@@ -322,6 +270,64 @@ class Music(commands.Cog):
         """Give info that node is ready"""
 
         print(f"Node {node.id} is ready!")
+        voice_channel = self.bot.get_channel(VoiceChannelID)
+        print("Channel acquired.")
+
+        #Create Fantasy Playlist
+        with open('fantasy_list.txt', encoding="utf8") as f:
+            fantasy_list = f.read().splitlines()
+
+        #Create Party Playlist
+        with open('party_list.txt', encoding="utf8") as g:
+            party_list = g.read().splitlines()
+
+        LogChannel = self.bot.get_channel(LogChannelID)
+        VoiceChannel: discord.VoiceChannel = self.bot.get_channel(VoiceChannelID)
+        guild = self.bot.get_guild(GuildID)
+        userBot = guild.get_member(BardID)
+
+        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
+        if timestamp.strftime("%a") == "Fri":
+            list = party_list
+            await VoiceChannel.edit(name="Vixapol!!!")
+            await LogChannel.send("Zmiana playlisty na imprezową.")
+            await userBot.edit(nick="DJ Stachu")
+        else:
+            list = fantasy_list
+            await VoiceChannel.edit(name="Scena Barda")
+            await LogChannel.send("Zmiana playlisty na fantasy.")
+            await userBot.edit(nick="Bard Stasiek")
+
+        random.shuffle(list)
+
+        #function to get context
+        channel = self.bot.get_channel(LogChannelID)
+        msg = await channel.fetch_message(1177811269164748872)
+        ctx = await self.bot.get_context(msg)
+        await channel.send("Bard gotowy do śpiewania!")
+        self.player = Player(bot=self.bot)
+        vc: Player = await VoiceChannel.connect(cls=self.player)
+
+        for query in list:
+            query = str(query)
+            print("Single query: " + query)
+            if not self.player.is_connected():
+                vc: Player = await VoiceChannel.connect(cls=self.player)
+            if query is None:
+                pass
+            else:
+                query = query.strip("<>")
+                try:
+                    if not re.match(URL_REGEX, query):
+                        tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(
+                                                                                            query)
+
+                    await self.player.add_singletrack(tracks)
+                except Exception as e:
+                    print("Exception: %s", e)
+
+        # Check timestamp and start task
+        self.task = self.bot.loop.create_task(self.msg1(ctx, self.player, party_list, fantasy_list))
 
     @commands.command("play")
     async def play(self, ctx: commands.Context, *, search: str) -> None:
@@ -348,6 +354,9 @@ class Music(commands.Cog):
         """Show currently playing track."""
 
         activity = discord.CustomActivity(f"Odgrywa: {payload.track}")
+        await self.player.queue.put_wait(self.player.current)
+        count = len(str(self.player.queue)[2:-2].split('\", \"'))
+        print(f"Zostało: {count}")
         await self.bot.change_presence(status=discord.Status.do_not_disturb,
                                        activity=activity)
 
@@ -359,7 +368,7 @@ class Music(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        if not member.bot:
+        if not member.bot and self.player:
             voice_channel = self.bot.get_channel(VoiceChannelID)
             current_voice_channel = self.player.bot.voice_clients[0].channel
 
