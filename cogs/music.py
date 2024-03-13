@@ -624,6 +624,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("▶")
 
         check = await self.check_track(ctx, self.player, query, "fantasy_list.txt")
+        print("Checked")
         if check is not None:
             await self.voting(ctx, self.player, check, "fantasy_list.txt")
         else:
@@ -649,6 +650,7 @@ class Music(commands.Cog):
         if check is not None:
             await self.voting(ctx, self.player, check, "party_list.txt")
         else:
+            await ctx.send("<@" + str(ctx.author.id) + "> Wystąpił problem, spróbuj jeszcze raz.")
             pass
 
     @addparty_command.error

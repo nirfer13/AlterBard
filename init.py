@@ -24,7 +24,7 @@ async def on_error(self, err, *args, **kwargs):
 async def on_command_error(self, ctx, exc):
     raise getattr(exc, "original", exc)
 
-#loads cogs as extentions to bot
+#loads cogs as ext>
 async def main():
     """Main bot applicaiton is starting."""
 
