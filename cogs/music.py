@@ -64,8 +64,8 @@ class LongTrack(commands.CommandError):
 class Player(wavelink.Player):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.queue = wavelink.Queue()
-        self.queue.loop_all = True
+        self.queue.mode = wavelink.QueueMode.loop_all
+        self.autoplay = wavelink.AutoPlayMode.enabled
         self.bot = bot
 
     async def teardown(self):
@@ -75,32 +75,41 @@ class Player(wavelink.Player):
         except KeyError:
             pass
 
-    async def add_singletrack(self, tracks: list[wavelink.YouTubeTrack]):
+    async def add_singletrack(self, tracks: wavelink.Search):
         """Add a single track to the queue."""
 
         if not tracks:
             raise NoTracksFound
 
+        if isinstance(tracks, wavelink.Playlist):
+            # tracks is a playlist...
+            raise NoTracksFound
+
         if len(tracks) > 1:
             for track in tracks:
-                if track.duration/60/1000 < 9:
-                    await self.queue.put_wait(tracks[0])
+                if track.length/60/1000 < 9:
+                    track: wavelink.Playable = track
+                    await self.queue.put_wait(track)
                     break
                 else:
                     pass
         else:
-            await self.queue.put_wait(tracks[0])
+            track: wavelink.Playable = tracks[0]
+            await self.queue.put_wait(track)
 
-        if not self.is_playing() and not self.queue.is_empty:
+        if not self.playing and not self.queue.is_empty:
+            track: wavelink.Playable = tracks[0]
             await self.start_playback()
 
     async def start_playback(self):
         """Get first track from the queue and start playing."""
 
         if not self.queue.is_empty:
-            await self.play(self.queue.get())
+            track = self.queue.get()
+            print(track)
+            await self.play(track)
 
-    async def get_track(self, ctx, tracks, file: str="fantasy_list.txt") -> wavelink.YouTubeTrack:
+    async def get_track(self, ctx, tracks, file: str="fantasy_list.txt") -> wavelink.Playable:
         """Show currently playing track."""
         if not tracks:
             LogChannel = self.bot.get_channel(LogChannelID)
@@ -201,12 +210,11 @@ class Music(commands.Cog):
                 random.shuffle(list)
                 await player.stop()
                 player.queue.reset()
-                player.queue.loop_all = True
                 
                 for query in list:
                     query = str(query)
                     print("Single query: " + query)
-                    if not self.player.is_connected():
+                    if not self.player.connected:
                         vc: Player = await VoiceChannel.connect(cls=self.player)
                     if query is None:
                         pass
@@ -214,7 +222,7 @@ class Music(commands.Cog):
                         query = query.strip("<>")
                         try:
                             if not re.match(URL_REGEX, query):
-                                tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(
+                                tracks: list[wavelink.Playable] = await wavelink.Playable.search(
                                                                                                     query)
 
                             await self.player.add_singletrack(tracks)
@@ -236,13 +244,12 @@ class Music(commands.Cog):
                 list = fantasy_list
                 await player.stop()
                 player.queue.reset()
-                player.queue.loop_all = True
                 random.shuffle(list)
                 
                 for query in list:
                     query = str(query)
                     print("Single query: " + query)
-                    if not self.player.is_connected():
+                    if not self.player.connected:
                         vc: Player = await VoiceChannel.connect(cls=self.player)
                     if query is None:
                         pass
@@ -250,8 +257,8 @@ class Music(commands.Cog):
                         query = query.strip("<>")
                         try:
                             if not re.match(URL_REGEX, query):
-                                tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(
-                                                                                                    query)
+                                tracks: list[wavelink.Playable] = await wavelink.Playable.search(
+                                                                                                query)
 
                             await self.player.add_singletrack(tracks)
                         except Exception as e:
@@ -262,14 +269,14 @@ class Music(commands.Cog):
     async def setup_hook(self) -> None:
         # Wavelink 2.0 has made connecting Nodes easier... Simply create each Node
         # and pass it to NodePool.connect with the client/bot.
-        node: wavelink.Node = wavelink.Node(uri='http://127.0.0.1:2333', password='youshallnotpass')
-        await wavelink.NodePool.connect(client=self.bot, nodes=[node])
+        node = wavelink.Node(uri='http://127.0.0.1:2333', password='youshallnotpass')
+        await wavelink.Pool.connect(nodes=[node], client=self.bot)
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node) -> None:
         """Give info that node is ready"""
 
-        print(f"Node {node.id} is ready!")
+        print(f"Node {node} is ready!")
         voice_channel = self.bot.get_channel(VoiceChannelID)
         print("Channel acquired.")
 
@@ -311,7 +318,7 @@ class Music(commands.Cog):
         for query in list:
             query = str(query)
             print("Single query: " + query)
-            if not self.player.is_connected():
+            if not self.player.connected:
                 vc: Player = await VoiceChannel.connect(cls=self.player)
             if query is None:
                 pass
@@ -319,9 +326,7 @@ class Music(commands.Cog):
                 query = query.strip("<>")
                 try:
                     if not re.match(URL_REGEX, query):
-                        tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(
-                                                                                            query)
-
+                        tracks: wavelink.Search = await wavelink.Playable.search(query)
                     await self.player.add_singletrack(tracks)
                 except Exception as e:
                     print("Exception: %s", e)
@@ -338,19 +343,19 @@ class Music(commands.Cog):
         else:
             vc: wavelink.Player = ctx.voice_client
 
-        tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
+        tracks: list[wavelink.Playable] = await wavelink.Playable.search(search)
         if not tracks:
             await ctx.send(f'Przepraszam, nie mogę znaleźć podanego utworu: `{search}`')
             return
 
         print(tracks[0])
-        track: wavelink.YouTubeTrack = tracks[0]
+        track: wavelink.Playable = tracks[0]
 
         await vc.play(track)
         print("Playing song...")
 
     @commands.Cog.listener()
-    async def on_wavelink_track_start(self, payload: wavelink.TrackEventPayload):
+    async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         """Show currently playing track."""
 
         activity = discord.CustomActivity(f"Odgrywa: {payload.track}")
@@ -360,11 +365,11 @@ class Music(commands.Cog):
         await self.bot.change_presence(status=discord.Status.do_not_disturb,
                                        activity=activity)
 
-    @commands.Cog.listener()
-    async def on_wavelink_track_end(self, payload: wavelink.TrackEventPayload):
-        """Get next track after finishing previous one."""
-        print("Track finished.")
-        await self.player.start_playback()
+    # @commands.Cog.listener()
+    # async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
+    #     """Get next track after finishing previous one."""
+    #     print("Track finished.")
+    #     await self.player.start_playback()
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -419,7 +424,7 @@ class Music(commands.Cog):
         query = query.strip("<>")
 
         if not re.match(URL_REGEX, query):
-            tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(
+            tracks: list[wavelink.Playable] = await wavelink.Playable.search(
                                                                                 query)
 
         track = await self.player.get_track(ctx, tracks, file)
@@ -427,7 +432,7 @@ class Music(commands.Cog):
         if track is None:
             return None
 
-        if track.duration/60/1000 > 9:
+        if track.length/60/1000 > 9:
             await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
             raise LongTrack
 
@@ -673,12 +678,14 @@ class Music(commands.Cog):
         await self.player.move_to(channel)
 
     @commands.command(name="next", aliases=["skip", "nastepna"])
-    @commands.cooldown(1, 60*30, commands.BucketType.user)
+    #@commands.cooldown(1, 60*30, commands.BucketType.user)
     @commands.check(is_channel)
     async def next_command(self, ctx):
 
-        await self.player.queue.put_wait(self.player.current)
-        await self.player.stop()
+        #await self.player.queue.put_wait(self.player.current)
+        #await self.player.skip()
+        await self.player.start_playback()
+        #await self.player.stop()
         await ctx.send("Kolejny utwór w kolejce...")
 
     @next_command.error
@@ -714,10 +721,12 @@ class Music(commands.Cog):
         embed.set_footer(text=f"{ctx.author.display_name}", icon_url=ctx.author.avatar)
         embed.add_field(name="Aktualnie gra", value=self.player.current.title, inline=False)
 
-        if upcoming := str(self.player.queue)[2:-2].split("\", \""):
+        print(str(self.player.queue))
+
+        if upcoming := str(self.player.queue)[8:-3].split("\", \""):
             embed.add_field(
                 name="Następny",
-                value="\n".join(t[1:-1] for t in upcoming[:show]),
+                value="\n".join(t for t in upcoming[:show]),
                 inline=False
             )
 

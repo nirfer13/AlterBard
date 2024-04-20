@@ -142,7 +142,6 @@ class Player(wavelink.Player):
 
     async def add_singletrack(self, ctx, tracks):
         if not tracks:
-
             raise NoTracksFound
         
 
@@ -220,9 +219,9 @@ class Player(wavelink.Player):
                 return tracks[OPTIONS[reaction.emoji]]
 
 class Music(commands.Cog, wavelink):
-        self.bot = bot
-        self.wavelink = wavelink.Client(bot=bot)
-        self.bot.loop.create_task(self.start_nodes()) 
+    self.bot = bot
+    self.wavelink = wavelink.Client(bot=bot)
+    self.bot.loop.create_task(self.start_nodes()) 
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -285,7 +284,7 @@ class Music(commands.Cog, wavelink):
                 preQuery = None
                 while x<5 and preQuery is None:
                     x+=1
-                    preQuery = await self.wavelink.get_tracks(query)
+                    preQuery = await self.wavelink.fetch_tracks(query)
                 await player.add_singletrack(ctx, preQuery)
 
         #Check timestamp and start task
@@ -473,7 +472,7 @@ class Music(commands.Cog, wavelink):
         if query is None:
             return None
         
-        if query.duration/60/1000 > 9:
+        if query.length/60/1000 > 9:
             await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
             raise LongTrack
             return None
