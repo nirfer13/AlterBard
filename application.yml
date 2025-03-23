@@ -5,10 +5,25 @@ spring:
   main:
     banner-mode: log
 lavalink:
+  plugins:
+    # Replace VERSION with the current version as shown by the Releases tab or a long commit hash for snapshots.
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.5"
+      snapshot: false # Set to true if you want to use a snapshot version.
+
+    # You can configure individual clients with the following.
+    # Any options or clients left unspecified will use their default values
+    # for those individual clients.
+    # Client configurations will ONLY take effect if the client is registered above,
+    # otherwise they are ignored.
+    # ---------------- WARNING ----------------
+    # This part of the config is for DEMONSTRATION PURPOSES ONLY!
+    # Do NOT use this config before understanding what the options do.
+    # You do NOT need to copy this config just because it is published here.
+    # ---------------- WARNING ----------------
   server:
     password: "youshallnotpass"
     sources:
-      youtube: true
+      youtube: false
       bandcamp: false
       soundcloud: true
       twitch: false
@@ -47,6 +62,7 @@ logging:
   level:
     root: INFO
     lavalink: INFO
+    dev.lavalink.youtube.http.YoutubeOauth2Handler: INFO
 
   request:
     enabled: true
@@ -61,3 +77,19 @@ logging:
     rollingpolicy:
       max-file-size: 1GB
       max-history: 30
+
+plugins:
+  youtube:
+      enabled: true # Whether this source can be used.
+      allowSearch: true # Whether "ytsearch:" and "ytmsearch:" can be used.
+      allowDirectVideoIds: true # Whether just video IDs can match. If false, only complete URLs will be loaded.
+      allowDirectPlaylistIds: true # Whether just playlist IDs can match. If false, only complete URLs will be loaded.
+      # The clients to use for track loading. See below for a list of valid clients.
+      # Clients are queried in the order they are given (so the first client is queried first and so on...)
+      clients:
+        - MUSIC
+        - ANDROID_VR
+        - WEB
+        - WEBEMBEDDED 
+      oauth:
+        enabled: true # Whether to enable OAuth for the YouTube plugin.

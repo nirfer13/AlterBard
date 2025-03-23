@@ -326,7 +326,7 @@ class Music(commands.Cog):
                 query = query.strip("<>")
                 try:
                     if not re.match(URL_REGEX, query):
-                        tracks: wavelink.Search = await wavelink.Playable.search(query)
+                        tracks: wavelink.Search = await wavelink.Playable.search(query, source= wavelink.TrackSource.YouTube)
                     await self.player.add_singletrack(tracks)
                 except Exception as e:
                     print("Exception: %s", e)
@@ -358,18 +358,25 @@ class Music(commands.Cog):
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         """Show currently playing track."""
 
-        activity = discord.CustomActivity(f"Odgrywa: {payload.track}")
-        await self.player.queue.put_wait(self.player.current)
-        count = len(str(self.player.queue)[2:-2].split('\", \"'))
-        print(f"Zostało: {count}")
-        await self.bot.change_presence(status=discord.Status.do_not_disturb,
-                                       activity=activity)
+        try:
+            activity = discord.CustomActivity(f"Odgrywa: {payload.track.title}")
+            await self.player.queue.put_wait(self.player.current)
+            count = len(str(self.player.queue)[2:-2].split('\", \"'))
+            print(f"Zostało: {count}")
+            await self.bot.change_presence(status=discord.Status.do_not_disturb,
+                                        activity=activity)
+        except:
+            print("Error during start of the track.")
 
-    # @commands.Cog.listener()
-    # async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
-    #     """Get next track after finishing previous one."""
-    #     print("Track finished.")
+    @commands.Cog.listener()
+    async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
+        """Get next track after finishing previous one."""
+        print("Track finished.")
     #     await self.player.start_playback()
+
+        if not self.player.playing:
+            await self.player.start_playback()
+            print("RESTART")
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
