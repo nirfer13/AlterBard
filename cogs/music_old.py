@@ -172,6 +172,7 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.wavelink = wavelink
+    # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -180,35 +181,7 @@ class Music(commands.Cog):
         await self.delete_bard_messages()
         await self.setup_hook()
 
-    # ==============================
-    #  Helper: ładowanie URL do kolejki
-    # ==============================
-    async def load_query_to_queue(self, query: str):
-        """Ładuje pojedynczy wpis (URL) do kolejki Barda."""
-
-        if not query:
-            return
-
-        query = query.strip("<> \n\r")
-        if not query:
-            return
-
-        # Teraz akceptujemy TYLKO pełne URL-e do mp3
-        if not re.match(URL_REGEX, query):
-            print(f"Pomijam wpis, bo nie jest URL-em: {query}")
-            return
-
-        # Lavalink z włączonym źródłem http potraktuje to jako bezpośredni resource mp3
-        tracks: list[wavelink.Playable] = await wavelink.Playable.search(query)
-        if not tracks:
-            print(f"Nie udało się załadować tracka z URL: {query}")
-            return
-
-        await self.player.add_singletrack(tracks)
-
-    # ==============================
-    #  Task: przełączanie playlisty (piątek)
-    # ==============================
+    #Check timestamp task
     async def msg1(self, ctx, player: wavelink.Player, party_list: list, fantasy_list: list):
         print("Loop check 1.")
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
@@ -228,31 +201,36 @@ class Music(commands.Cog):
                 AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
                 await VoiceChannel.edit(name="MORDOWNIA!!!")
                 await LogChannel.send("Zmiana playlisty na imprezową.")
-                await AnnouceChannel.send(
-                    "HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? "
-                    f"Zapraszam na <#{VoiceChannelID}> imprezę <:OOOO:982215120199507979> "
-                    "<a:RainbowPls:882184531917037608>!"
-                )
+                await AnnouceChannel.send("HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
                 guild = self.bot.get_guild(GuildID)
                 userBot = guild.get_member(BardID)
                 await userBot.edit(nick="DJ Stachu")
 
-                lista = party_list
-                random.shuffle(lista)
+                list = party_list
+                random.shuffle(list)
                 await player.stop()
                 player.queue.reset()
-
-                for query in lista:
-                    print("Single query (party): " + str(query))
+                
+                for query in list:
+                    query = str(query)
+                    print("Single query: " + query)
                     if not self.player.connected:
                         vc: Player = await VoiceChannel.connect(cls=self.player)
-                    try:
-                        await self.load_query_to_queue(str(query))
-                    except Exception as e:
-                        print("Exception (party change):", e)
+                    if query is None:
+                        pass
+                    else:
+                        query = query.strip("<>")
+                        try:
+                            if not re.match(URL_REGEX, query):
+                                tracks: list[wavelink.Playable] = await wavelink.Playable.search(
+                                                                                                    query)
+
+                            await self.player.add_singletrack(tracks)
+                        except Exception as e:
+                            print("Exception: %s", e)
 
             elif (timestamp.strftime("%a") != "Fri" and actDay == "Fri"):
-
+                
                 actDay = timestamp.strftime("%a")
 
                 LogChannel = self.bot.get_channel(LogChannelID)
@@ -263,27 +241,34 @@ class Music(commands.Cog):
                 userBot = guild.get_member(BardID)
                 await userBot.edit(nick="Bard Stasiek")
 
-                lista = fantasy_list
+                list = fantasy_list
                 await player.stop()
                 player.queue.reset()
-                random.shuffle(lista)
-
-                for query in lista:
-                    print("Single query (fantasy): " + str(query))
+                random.shuffle(list)
+                
+                for query in list:
+                    query = str(query)
+                    print("Single query: " + query)
                     if not self.player.connected:
                         vc: Player = await VoiceChannel.connect(cls=self.player)
-                    try:
-                        await self.load_query_to_queue(str(query))
-                    except Exception as e:
-                        print("Exception (fantasy change):", e)
+                    if query is None:
+                        pass
+                    else:
+                        query = query.strip("<>")
+                        try:
+                            if not re.match(URL_REGEX, query):
+                                tracks: list[wavelink.Playable] = await wavelink.Playable.search(
+                                                                                                query)
 
+                            await self.player.add_singletrack(tracks)
+                        except Exception as e:
+                            print("Exception: %s", e)
             print("Loop check 2.")
             await asyncio.sleep(3600)
 
-    # ==============================
-    #  Wavelink node
-    # ==============================
     async def setup_hook(self) -> None:
+        # Wavelink 2.0 has made connecting Nodes easier... Simply create each Node
+        # and pass it to NodePool.connect with the client/bot.
         node = wavelink.Node(uri='http://127.0.0.1:2333', password='youshallnotpass')
         await wavelink.Pool.connect(nodes=[node], client=self.bot)
 
@@ -295,11 +280,11 @@ class Music(commands.Cog):
         voice_channel = self.bot.get_channel(VoiceChannelID)
         print("Channel acquired.")
 
-        # Create Fantasy Playlist – TERAZ: każdy wiersz = URL do mp3
+        #Create Fantasy Playlist
         with open('fantasy_list.txt', encoding="utf8") as f:
             fantasy_list = f.read().splitlines()
 
-        # Create Party Playlist
+        #Create Party Playlist
         with open('party_list.txt', encoding="utf8") as g:
             party_list = g.read().splitlines()
 
@@ -310,19 +295,19 @@ class Music(commands.Cog):
 
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
-            lista = party_list
+            list = party_list
             await VoiceChannel.edit(name="Vixapol!!!")
             await LogChannel.send("Zmiana playlisty na imprezową.")
             await userBot.edit(nick="DJ Stachu")
         else:
-            lista = fantasy_list
+            list = fantasy_list
             await VoiceChannel.edit(name="Scena Barda")
             await LogChannel.send("Zmiana playlisty na fantasy.")
             await userBot.edit(nick="Bard Stasiek")
 
-        random.shuffle(lista)
+        random.shuffle(list)
 
-        # function to get context
+        #function to get context
         channel = self.bot.get_channel(LogChannelID)
         msg = await channel.fetch_message(1177811269164748872)
         ctx = await self.bot.get_context(msg)
@@ -330,51 +315,45 @@ class Music(commands.Cog):
         self.player = Player(bot=self.bot)
         vc: Player = await VoiceChannel.connect(cls=self.player)
 
-        for query in lista:
-            print("Single query (initial): " + str(query))
+        for query in list:
+            query = str(query)
+            print("Single query: " + query)
             if not self.player.connected:
                 vc: Player = await VoiceChannel.connect(cls=self.player)
-            try:
-                await self.load_query_to_queue(str(query))
-            except Exception as e:
-                print("Exception (initial load):", e)
+            if query is None:
+                pass
+            else:
+                query = query.strip("<>")
+                try:
+                    if not re.match(URL_REGEX, query):
+                        tracks: wavelink.Search = await wavelink.Playable.search(query, source= wavelink.TrackSource.YouTube)
+                    await self.player.add_singletrack(tracks)
+                except Exception as e:
+                    print("Exception: %s", e)
 
         # Check timestamp and start task
         self.task = self.bot.loop.create_task(self.msg1(ctx, self.player, party_list, fantasy_list))
 
-    # ==============================
-    #  Komenda !play – też tylko URL
-    # ==============================
     @commands.command("play")
     async def play(self, ctx: commands.Context, *, search: str) -> None:
-        """Odtwarza lokalne mp3 po URL (http)."""
+        """Simple play command."""
 
         if not ctx.voice_client:
-            if not ctx.author.voice or not ctx.author.voice.channel:
-                return await ctx.send("Dołącz najpierw do kanału głosowego.")
             vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
         else:
             vc: wavelink.Player = ctx.voice_client
 
-        search = search.strip("<> \n\r")
-
-        if not re.match(URL_REGEX, search):
-            await ctx.send("Podaj pełny adres URL do pliku mp3 (http://...).")
-            return
-
         tracks: list[wavelink.Playable] = await wavelink.Playable.search(search)
         if not tracks:
-            await ctx.send(f'Nie mogę załadować utworu z podanego URL.')
+            await ctx.send(f'Przepraszam, nie mogę znaleźć podanego utworu: `{search}`')
             return
 
+        print(tracks[0])
         track: wavelink.Playable = tracks[0]
 
         await vc.play(track)
-        print("Playing local mp3...")
+        print("Playing song...")
 
-    # ==============================
-    #  Eventy wavelinka
-    # ==============================
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         """Show currently playing track."""
@@ -384,17 +363,16 @@ class Music(commands.Cog):
             await self.player.queue.put_wait(self.player.current)
             count = len(str(self.player.queue)[2:-2].split('\", \"'))
             print(f"Zostało: {count}")
-            await self.bot.change_presence(
-                status=discord.Status.do_not_disturb,
-                activity=activity
-            )
-        except Exception:
+            await self.bot.change_presence(status=discord.Status.do_not_disturb,
+                                        activity=activity)
+        except:
             print("Error during start of the track.")
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         """Get next track after finishing previous one."""
         print("Track finished.")
+    #     await self.player.start_playback()
 
         if not self.player.playing:
             await self.player.start_playback()
@@ -404,25 +382,16 @@ class Music(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
         if not member.bot and self.player:
             voice_channel = self.bot.get_channel(VoiceChannelID)
-
-            # uważaj: to założy, że bot jest połączony TYLKO raz
             current_voice_channel = self.player.bot.voice_clients[0].channel
 
-            if current_voice_channel.id != VoiceChannelID and not [
-                m for m in current_voice_channel.members if not m.bot
-            ]:
+            if current_voice_channel.id != VoiceChannelID and not [m for m in current_voice_channel.members if not m.bot]:
+            
                 print("Changing voice channel automatically.")
                 channel = await self.player.move_to(voice_channel)
 
-    # ==============================
-    #  Check kanału
-    # ==============================
     async def is_channel(ctx):
         return ctx.channel.id == CommandChannelID or ctx.channel.id == 1057198781206106153
-
-    # ==============================
-    #  Porządki po Bardzie
-    # ==============================
+    
     async def delete_bard_messages(self):
         """Delete bard vote messages."""
 
@@ -431,7 +400,6 @@ class Music(commands.Cog):
         async for message in vote_channel.history(limit=15):
             if message.author == self.bot.user:
                 await message.delete()
-                counter += 1
 
         print(f"MESSAGES COUNT {counter}")
 
@@ -440,59 +408,49 @@ class Music(commands.Cog):
         voice_channel = self.bot.get_channel(VoiceChannelID)
         channel = await player.move_to(ctx.author.channel)
 
-    # ==============================
-    #  Walidacja utworu – tylko URL
-    # ==============================
     async def check_track(self, ctx,
                           player: wavelink.Player,
                           query: str,
-                          file: str = "fantasy_list.txt"):
+                          file: str="fantasy_list.txt"):
 
         with open(file, "r", encoding="utf8") as f:
             lines = f.read().splitlines()
 
-        # Normalizujemy zapytanie – w tym podejściu to ma być URL do pliku mp3
-        query = query.strip("<> \n\r")
-
         if query in lines:
-            await ctx.send(
-                f"<@{ctx.author.id}>, mam już ten URL w repertuarze, więc musisz wybrać coś innego."
-            )
+            await ctx.send("<@" + str(ctx.author.id) + ">, mam już taki utwór w repertuarze, więc musisz wybrać coś innego.")
             raise DuplicatedTrack
 
-        if not re.match(URL_REGEX, query):
-            await ctx.send(
-                f"<@{ctx.author.id}> Podaj pełny adres URL do pliku mp3 (np. `http://127.0.0.1:8080/fantasy/utwor.mp3`)."
-            )
+        if len(query.split()) <= 1:
+            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"* .")
             raise InvalidTrackName
 
-        # Ładujemy track z bezpośredniego URL
-        tracks: list[wavelink.Playable] = await wavelink.Playable.search(query)
-        if not tracks:
-            await ctx.send(
-                f"<@{ctx.author.id}>, nie udało się załadować utworu z tego URL-a."
-            )
-            raise NoTracksFound
+        if len(query) < 10:
+            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu jest za krótki. Spróbuj coś dłuższego.")
+            raise InvalidTrackName
 
-        track = tracks[0]
+        query = query.strip("<>")
 
-        # Limit długości nadal obowiązuje (w ms)
-        if track.length / 1000 / 60 > 9:
-            await ctx.send(
-                f"<@{ctx.author.id}>, utwór jest za długi! Wybierz utwór krótszy niż 8 minut."
-            )
+        if not re.match(URL_REGEX, query):
+            tracks: list[wavelink.Playable] = await wavelink.Playable.search(
+                                                                                query)
+
+        track = await self.player.get_track(ctx, tracks, file)
+
+        if track is None:
+            return None
+
+        if track.length/60/1000 > 9:
+            await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
             raise LongTrack
 
         return track
-
-    # ==============================
-    #  Ranking i wsparcie Barda
-    # ==============================
+    
     async def check_bard_support(self, ctx):
+        
+        filename="authors_list.json"
 
-        filename = "authors_list.json"
-
-        with open(filename, 'r', encoding="utf8") as file:
+        with open(filename,'r', encoding="utf8") as file:
+            # First we load existing data into a dict.
             file_data = json.load(file)
 
             id = str(ctx.author.id)
@@ -501,16 +459,14 @@ class Music(commands.Cog):
             else:
                 file_data[id] = 0
 
-        await ctx.send(
-            f"<@{ctx.author.id}>, pomogłeś mi {file_data[id]} razy! "
-            "Dziena! <:peepoBlush:984769061340737586>"
-        )
+        await ctx.send("<@" + str(ctx.author.id)+ ">, pomogłeś mi " + str(file_data[id]) + " razy! Dziena! <:peepoBlush:984769061340737586>")
 
     async def ranking_bard_support(self, ctx):
+        
+        filename="authors_list.json"
 
-        filename = "authors_list.json"
-
-        with open(filename, 'r', encoding="utf8") as file:
+        with open(filename,'r', encoding="utf8") as file:
+            # First we load existing data into a dict.
             file_data = json.load(file)
 
             id = str(ctx.author.id)
@@ -522,30 +478,29 @@ class Music(commands.Cog):
             ranking = dict(sorted(file_data.items(), key=lambda item: item[1], reverse=True))
 
         rankingString = ""
-        x = 1
+        x=1
         for Person in ranking.items():
             user = self.bot.get_user(int(Person[0]))
             if user:
-                rankingString += f"{x}. **{user.name}** - {Person[1]} pkt.\n"
-                x += 1
+                rankingString += str(x) + ". **" + user.name + "** - " + str(Person[1]) + " pkt.\n"
+                x+=1
                 if x >= 11:
                     break
 
-        emb = discord.Embed(
-            title='Ranking pomocników barda Staśka!',
-            description=rankingString,
-            color=0xCE7E00
-        )
+        #Embed create   
+        emb=discord.Embed(title='Ranking pomocników barda Staśka!', description=rankingString, color=0xCE7E00)
         emb.set_thumbnail(url="https://www.altermmo.pl/wp-content/uploads/BardLogo.png")
         emb.set_footer(text='Oby gust muzyczny był z Wami!')
         await ctx.send(embed=emb)
 
+
     async def bard_support(self, ctx, users: set, author: discord.User, success: bool):
 
-        filename = "authors_list.json"
+        filename="authors_list.json"
         Channel = self.bot.get_channel(CommandChannelID)
 
-        with open(filename, 'r+', encoding="utf8") as file:
+        with open(filename,'r+', encoding="utf8") as file:
+            # First we load existing data into a dict.
             file_data = json.load(file)
 
             for user in users:
@@ -564,95 +519,70 @@ class Music(commands.Cog):
                     file_data[id] = 1
 
             json_object = json.dumps(file_data, indent=4)
+            # Sets file's current position at offset.
             file.seek(0)
-            file.truncate(0)
+            file.truncate(0) # need '0' when using r+
             file.write(json_object)
 
-            role1 = discord.utils.get(ctx.guild.roles, id=1054138582811549776)  # Pomagier
-            role2 = discord.utils.get(ctx.guild.roles, id=1059766781889228820)  # Mlodszy Bard
-            role3 = discord.utils.get(ctx.guild.roles, id=1059766769524424714)  # Zastepca Barda
+            role1 = discord.utils.get(ctx.guild.roles, id=1054138582811549776) #Pomagier
+            role2 = discord.utils.get(ctx.guild.roles, id=1059766781889228820) #Mlodszy Bard
+            role3 = discord.utils.get(ctx.guild.roles, id=1059766769524424714) #Zastepca Barda
 
             for user in users:
                 id = str(user.id)
                 if id in file_data.keys() and user.id != 1004008220437778523:
                     if file_data[id] >= 5 and file_data[id] < 20 and role1 not in user.roles:
                         await user.add_roles(role1)
-                        await Channel.send(
-                            f"<@{user.id}>! Za wkład w mój muzyczny rozwój otrzymałeś rangę mojego pomagiera! "
-                            "Kto wie, pomagaj mi dalej, a być może czeka Cię nagroda. <:Siur:717731500883181710>"
-                        )
+                        await Channel.send("<@" + str(user.id) + ">! Za wkład w mój muzyczny rozwój otrzymałeś rangę mojego pomagiera! Kto wie, pomagaj mi dalej, a być może czeka Cię nagroda. <:Siur:717731500883181710>")
                     if file_data[id] >= 20 and file_data[id] < 50 and role2 not in user.roles:
                         await user.remove_roles(role1)
                         await user.add_roles(role2)
-                        await Channel.send(
-                            f"<@{user.id}>! Widzę,że nie odpuszczasz. W nagrodę dostałeś rangę Młodszego Barda! "
-                            "Może już wystarczy? <:Kermitpls:790963160106008607>"
-                        )
+                        await Channel.send("<@" + str(user.id) + ">! Widzę,że nie odpuszczasz. W nagrodę dostałeś rangę Młodszego Barda! Może już wystarczy? <:Kermitpls:790963160106008607>")
                     if file_data[id] >= 50 and role3 not in user.roles:
                         await user.remove_roles(role2)
                         await user.add_roles(role3)
-                        await Channel.send(
-                            f"<@{user.id}>! Czekaj... Czy Ty chcesz mnie wygryźć? "
-                            "Dobra, możesz być moim zastępcą, ok? <:MonkaS:882181709100097587> "
-                        )
+                        await Channel.send("<@" + str(user.id) + ">! Czekaj... Czy Ty chcesz mnie wygryźć? Dobra, możesz być moim zastępcą, ok? <:MonkaS:882181709100097587> ")
 
         if success:
-            await Channel.send(
-                f"<@{author.id}>, Twój utwór został pomyślnie dodany do mojego repertuaru. "
-                f"Pomogłeś mi {file_data[str(author.id)]} razy!"
-            )
+            await Channel.send("<@" + str(author.id)+ ">, Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[str(author.id)]) + " razy!")
 
-    # ==============================
-    #  Głosowanie – teraz zapisujemy URL, nie track.__str__
-    # ==============================
-    async def voting(self, ctx, player: wavelink.Player, track: wavelink.Playable, file: str = "fantasy_list.txt"):
+    async def voting(self, ctx, player: wavelink.Player, query, file: str="fantasy_list.txt"):
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         add = False
         if file == "fantasy_list.txt":
             if timestamp.strftime("%a") != "Fri":
                 add = True
             playlist = "FANTASY <:Up:912798893304086558><:Loot:912797849916436570>"
-            embedurl = 'https://www.altermmo.pl/wp-content/uploads/altermmo-5-112-1.png'
+            embedurl='https://www.altermmo.pl/wp-content/uploads/altermmo-5-112-1.png'
             color = 0x77ff00
         elif file == "party_list.txt":
             if timestamp.strftime("%a") == "Fri":
                 add = True
             playlist = "IMPREZA <a:RainbowPls:882184531917037608><a:RainbowPls:882184531917037608><a:RainbowPls:882184531917037608>"
-            embedurl = 'https://www.altermmo.pl/wp-content/uploads/Drunk.png'
+            embedurl='https://www.altermmo.pl/wp-content/uploads/Drunk.png'
             color = 0xff0011
         else:
             playlist = "test"
-            embedurl = 'https://www.altermmo.pl/wp-content/uploads/altermmo-2-112.png'
+            embedurl='https://www.altermmo.pl/wp-content/uploads/altermmo-2-112.png'
             color = 0xffffff
 
         def _check(r, u):
-            return (
+            return(
                 r.emoji in VOTES.keys()
                 and r.message.id == msg.id
             )
 
-        uri = getattr(track, "uri", "brak URL")
-        title = getattr(track, "title", uri)
-        thumb = getattr(track, "artwork", None)
-
         embed = discord.Embed(
-            title=f"Czy chcecie dodać utwór do playlisty {playlist}?",
-            description=(
-                "Pamiętajte, że w playliście powinny znaleźć się utwory, które wpasowują się w tematykę "
-                "i nie są nadto specyficzne.\n\n"
-                f"Proponowany utwór: **{title}**\n"
-                f"Link: {uri}"
-            ),
+            title="Czy chcecie dodać utwór do playlisty " + playlist + "?",
+            description=(f"\nPamiętacje, że w playliście powinny znaleźć się utwory, które wpasowują się w tematykę i nie są nadto specyficzne.\n\nProponowany utwór: **{query}**\nLink: {query.uri}"),
             color=color,
             timestamp=dt.datetime.utcnow()
         )
-        if thumb:
-            embed.set_image(url=thumb)
+        embed.set_image(url=query.thumb)
         embed.set_footer(text=f"Dodana przez {ctx.author.display_name}", icon_url=ctx.author.avatar)
-
         Channel = self.bot.get_channel(VoteChannelID)
         msg = await Channel.send(embed=embed)
-        cache_msg = discord.utils.get(self.bot.cached_messages, id=msg.id) or msg
+        cache_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
 
         for emoji in list(VOTES.keys()):
             await msg.add_reaction(emoji)
@@ -661,31 +591,31 @@ class Music(commands.Cog):
         negReaction = 0
         try:
             while (posReaction < votesReq and negReaction < votesReq):
-                reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*12, check=_check)
-                posReaction = cache_msg.reactions[0].count
-                negReaction = cache_msg.reactions[1].count
-                print("Reactions: " + str(posReaction) + " " + str(negReaction))
+                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*12, check=_check)
+                    posReaction = cache_msg.reactions[0].count
+                    negReaction = cache_msg.reactions[1].count
+                    print("Reactions: " + str(posReaction) + " " + str(negReaction))
 
             if posReaction >= votesReq:
                 print("Positive reactions won.")
                 reactions = cache_msg.reactions[0]
                 reacters = set()
+                print(reactions)
                 async for user in reactions.users():
                     reacters.add(user)
                 print(reacters)
                 await msg.delete()
                 await self.bard_support(ctx, reacters, ctx.author, True)
 
-                # Zapisujemy URL do pliku z listą
                 with open(file, "a", encoding="utf8") as file_object:
-                    file_object.write(f"\n{uri}")
+                    file_object.write(f"\n{query}")
                 Channel = self.bot.get_channel(CommandChannelID)
-                await Channel.send(
-                    f"Utwór {title} dopisany do repertuaru {playlist} <a:PepoG:936907752155021342>."
-                )
+                await Channel.send("Utwór " + str(query.title) + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
                 if add:
-                    if track is not None:
-                        player.queue.put(track)
+                    if query is not None:
+                        print("Player")
+                        player.queue.put(query)
+                        #await Channel.send(f"Dodano {query} do kolejki.")             
 
             else:
                 print("Negative reactions won.")
@@ -699,9 +629,6 @@ class Music(commands.Cog):
         except asyncio.TimeoutError:
             await msg.delete()
 
-    # ==============================
-    #  Komendy fantasy/party – teraz przyjmują URL do mp3
-    # ==============================
     @commands.command(name="fantasy")
     @commands.check(is_channel)
     @commands.cooldown(2, 60*60*23, commands.BucketType.user)
@@ -719,16 +646,10 @@ class Music(commands.Cog):
     async def addfantasy_command_cooldown(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
             print("Command on cooldown.")
-            await ctx.send(
-                'Poczekaj na odnowienie komendy! Zostało '
-                f'{round(error.retry_after/60/60, 2)} godzin/y <:Bedge:970576892874854400>.'
-            )
+            await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y <:Bedge:970576892874854400>.')
         if isinstance(error, commands.MissingRequiredArgument):
             print("Invoke error.")
-            await ctx.send(
-                f"<@{ctx.author.id}> Coś źle napisałeś. "
-                "Wpisz `$fantasy \"URL_do_pliku_mp3\"`."
-            )
+            await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Wpisz $fantasy \"Tytuł utworu\".")
 
     @commands.command(name="party", aliases=["impreza"])
     @commands.check(is_channel)
@@ -741,28 +662,18 @@ class Music(commands.Cog):
         if check is not None:
             await self.voting(ctx, self.player, check, "party_list.txt")
         else:
-            await ctx.send(
-                f"<@{ctx.author.id}> Wystąpił problem, spróbuj jeszcze raz."
-            )
+            await ctx.send("<@" + str(ctx.author.id) + "> Wystąpił problem, spróbuj jeszcze raz.")
+            pass
 
     @addparty_command.error
     async def addparty_command_cooldown(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
             print("Command on cooldown.")
-            await ctx.send(
-                'Poczekaj na odnowienie komendy! Zostało '
-                f'{round(error.retry_after/60/60, 2)} godzin/y <:Bedge:970576892874854400>.'
-            )
+            await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y <:Bedge:970576892874854400>.')
         if isinstance(error, commands.MissingRequiredArgument):
             print("Invoke error.")
-            await ctx.send(
-                f"<@{ctx.author.id}> Coś źle napisałeś. "
-                "Wpisz `$party \"URL_do_pliku_mp3\"`."
-            )
+            await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Wpisz $party \"Tytuł utworu\".")
 
-    # ==============================
-    #  Inne komendy
-    # ==============================
     @commands.command(name="singme", aliases=["zagrajmi"])
     @commands.check(is_channel)
     async def singme_command(self, ctx):
@@ -774,19 +685,21 @@ class Music(commands.Cog):
         await self.player.move_to(channel)
 
     @commands.command(name="next", aliases=["skip", "nastepna"])
+    #@commands.cooldown(1, 60*30, commands.BucketType.user)
     @commands.check(is_channel)
     async def next_command(self, ctx):
+
+        #await self.player.queue.put_wait(self.player.current)
+        #await self.player.skip()
         await self.player.start_playback()
+        #await self.player.stop()
         await ctx.send("Kolejny utwór w kolejce...")
 
     @next_command.error
     async def next_command_cooldown(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
             print("Command on cooldown.")
-            await ctx.send(
-                'Poczekaj na odnowienie komendy! Zostało '
-                f'{round(error.retry_after/60, 2)} minut <:Bedge:970576892874854400>.'
-            )
+            await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60, 2)) + ' minut <:Bedge:970576892874854400>.')
 
     @commands.command(name="bardranking", aliases=["rankingbarda"])
     @commands.check(is_channel)
@@ -825,3 +738,6 @@ class Music(commands.Cog):
             )
 
         msg = await ctx.send(embed=embed)
+
+async def setup(bot):
+    await bot.add_cog(Music(bot))

@@ -25,12 +25,12 @@ lavalink:
     sources:
       youtube: false
       bandcamp: false
-      soundcloud: true
+      soundcloud: false
       twitch: false
       vimeo: false
       mixer: false
-      http: false
-      local: false
+      http: true
+      local: true
     bufferDurationMs: 800
     frameBufferDurationMs: 15000 # How many milliseconds of audio to keep buffered
     opusEncodingQuality: 10 # Opus encoder quality. Valid values range from 0 to 10, where 10 is best quality but is the most expensive on the CPU.
