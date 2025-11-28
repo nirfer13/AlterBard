@@ -6,6 +6,9 @@ import asyncio
 
 from globals.globalvariables import DebugMode
 
+from threading import Thread
+from server.server import run_server   # <-- importujesz serwer HTTP
+
 # token and other needed variables will be hidden in .env file
 load_dotenv()
 description = 'AlterMMO Discord Bard Bot, Development in progres'
@@ -24,11 +27,21 @@ async def on_error(self, err, *args, **kwargs):
 async def on_command_error(self, ctx, exc):
     raise getattr(exc, "original", exc)
 
-#loads cogs as ext>
+def start_http_server():
+    """Running Flask HTTP Server in separate thread."""
+    t = Thread(target=run_server)
+    t.daemon = True
+    t.start()
+    print("HTTP server started.")
+
+#loads cogs as ext
 async def main():
     """Main bot applicaiton is starting."""
-
     print("Bot is starting...")
+
+    # <<< START HTTP SERVER BEFORE BOT >>>
+    start_http_server()
+
     for file in os.listdir("C:\\Programowanie\\AlterBard\\cogs"):
         if file.endswith(".py"):
             extension = file[:-3]
