@@ -31,9 +31,9 @@ lavalink:
       mixer: false
       http: true
       local: false
-    bufferDurationMs: 800
+    bufferDurationMs: 1200
     frameBufferDurationMs: 15000 # How many milliseconds of audio to keep buffered
-    opusEncodingQuality: 10 # Opus encoder quality. Valid values range from 0 to 10, where 10 is best quality but is the most expensive on the CPU.
+    opusEncodingQuality: 7 # Opus encoder quality. Valid values range from 0 to 10, where 10 is best quality but is the most expensive on the CPU.
     resamplingQuality: LOW # Quality of resampling operations. Valid values are LOW, MEDIUM and HIGH, where HIGH uses the most CPU.
     trackStuckThresholdMs: 10000 # The threshold for how long a track can be stuck. A track is stuck if does not return any audio data.
     useSeekGhosting: true # Seek ghosting is the effect where whilst a seek is in progress, the audio buffer is read from until empty, or until seek is ready.
@@ -77,19 +77,3 @@ logging:
     rollingpolicy:
       max-file-size: 1GB
       max-history: 30
-
-plugins:
-  youtube:
-      enabled: true # Whether this source can be used.
-      allowSearch: true # Whether "ytsearch:" and "ytmsearch:" can be used.
-      allowDirectVideoIds: true # Whether just video IDs can match. If false, only complete URLs will be loaded.
-      allowDirectPlaylistIds: true # Whether just playlist IDs can match. If false, only complete URLs will be loaded.
-      # The clients to use for track loading. See below for a list of valid clients.
-      # Clients are queried in the order they are given (so the first client is queried first and so on...)
-      clients:
-        - MUSIC
-        - ANDROID_VR
-        - WEB
-        - WEBEMBEDDED 
-      oauth:
-        enabled: true # Whether to enable OAuth for the YouTube plugin.
