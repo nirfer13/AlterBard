@@ -10,7 +10,8 @@ python = "3.11"
 discord ="2.3.2"
 # ffmpeg and lavalink (the lavalink.py client) were left over from playback via
 # discord.FFmpegPCMAudio - the bot now streams through the Lavalink server and wavelink.
-wavelink="3.2.0"
+# 3.5.1+ required for Lavalink 4.2 (sends "channelId" in the voice state) and DAVE.
+wavelink="3.5.2"
 yarl="1.9.2"
 python-dotenv = "^1.0.0"
 
