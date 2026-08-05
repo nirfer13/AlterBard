@@ -41,13 +41,16 @@ FAILURE_THRESHOLD = 3
 # How long to keep the radio silent after a detected YouTube outage.
 FAILURE_COOLDOWN = 120
 
-# Names the bot gives its voice channel. The note emoji marks it as the music
-# channel at a glance in the channel list. Discord rate-limits channel renames
-# to two per ten minutes, which is why these are only set on startup and on the
-# Friday playlist switch.
-CHANNEL_NAME_FANTASY = "🎵・Scena Barda・🎵"
-CHANNEL_NAME_PARTY = "🎶・Vixapol!!!・🎶"
-CHANNEL_NAME_PARTY_SWITCH = "🎶・MORDOWNIA!!!・🎶"
+# Names and descriptions the bot gives its voice channel. Discord rate-limits
+# channel edits to two per ten minutes, so name and topic are always set in a
+# single edit() call - splitting them would burn the budget twice as fast.
+CHANNEL_NAME_FANTASY = "Scena Barda"
+CHANNEL_NAME_PARTY = "Vixapol!!!"
+CHANNEL_NAME_PARTY_SWITCH = "MORDOWNIA!!!"
+
+# The topic is what shows up under the channel name in the client.
+CHANNEL_TOPIC_FANTASY = "🎵🎶 Klimaty RPG 🎶🎵"
+CHANNEL_TOPIC_PARTY = "🎵🎶 Piątkowa Vixa 🎶🎵"
 
 OPTIONS = {
     "1️⃣": 0,
@@ -357,7 +360,7 @@ class Music(commands.Cog):
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
                 AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
-                await VoiceChannel.edit(name=CHANNEL_NAME_PARTY_SWITCH)
+                await VoiceChannel.edit(name=CHANNEL_NAME_PARTY_SWITCH, topic=CHANNEL_TOPIC_PARTY)
                 await LogChannel.send("Zmiana playlisty na imprezową.")
                 await AnnouceChannel.send("HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
                 guild = self.bot.get_guild(GuildID)
@@ -377,7 +380,7 @@ class Music(commands.Cog):
 
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
-                await VoiceChannel.edit(name=CHANNEL_NAME_FANTASY)
+                await VoiceChannel.edit(name=CHANNEL_NAME_FANTASY, topic=CHANNEL_TOPIC_FANTASY)
                 await LogChannel.send("Zmiana playlisty na fantasy.")
                 guild = self.bot.get_guild(GuildID)
                 userBot = guild.get_member(BardID)
@@ -423,12 +426,12 @@ class Music(commands.Cog):
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
-            await VoiceChannel.edit(name=CHANNEL_NAME_PARTY)
+            await VoiceChannel.edit(name=CHANNEL_NAME_PARTY, topic=CHANNEL_TOPIC_PARTY)
             await LogChannel.send("Zmiana playlisty na imprezową.")
             await userBot.edit(nick="DJ Stachu")
         else:
             list = fantasy_list
-            await VoiceChannel.edit(name=CHANNEL_NAME_FANTASY)
+            await VoiceChannel.edit(name=CHANNEL_NAME_FANTASY, topic=CHANNEL_TOPIC_FANTASY)
             await LogChannel.send("Zmiana playlisty na fantasy.")
             await userBot.edit(nick="Bard Stasiek")
 
