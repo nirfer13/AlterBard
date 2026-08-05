@@ -3,3 +3,7 @@ Lavalink.jar
 nohup.out
 .venv
 *.pyc
+
+# Runtime logs - the bot's own file plus Lavalink's rotated output.
+logs/bot.log*
+logs/spring.log.*.gz

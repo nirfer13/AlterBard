@@ -1,9 +1,12 @@
 from discord.ext import commands
+import logging
 import discord
 from datetime import datetime, timezone
 
 import datetime
 import sys
+
+logger = logging.getLogger(__name__)
 
 # general bag for commands that does not fit anywhere else
 
@@ -24,9 +27,9 @@ class general(commands.Cog, name="general"):
     # Just debug action, printing to console when ready and logged in.
     @commands.Cog.listener()
     async def on_ready(self):
-        print('ready')
-        print('Logged in as:  ', self.bot.user)
-        print('ID:  ', self.bot.user.id)
+        logger.info('Ready.')
+        logger.info('Logged in as: %s', self.bot.user)
+        logger.info('ID: %s', self.bot.user.id)
 
 async def setup(bot):
     await bot.add_cog(general(bot))

@@ -1,10 +1,14 @@
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
+import logging
 import os
 import asyncio
 
+from bot_logging import setup_logging
 from globals.globalvariables import DebugMode
+
+logger = logging.getLogger(__name__)
 
 # token and other needed variables will be hidden in .env file
 load_dotenv()
@@ -28,18 +32,22 @@ async def on_command_error(self, ctx, exc):
 async def main():
     """Main bot applicaiton is starting."""
 
-    print("Bot is starting...")
+    logger.info("Bot is starting...")
     for file in os.listdir("C:\\Programowanie\\AlterBard\\cogs"):
         if file.endswith(".py"):
             extension = file[:-3]
             try:
                 await bot.load_extension(f"cogs.{extension}")
-                print(f"Loaded extension '{extension}'")
-            except Exception as e:
-                exception = f"{type(e).__name__}: {e}"
-                print(f"Failed to load extension {extension}\n{exception}")
+                logger.info("Loaded extension '%s'", extension)
+            except Exception:
+                # exc_info keeps the traceback, which is the part that says
+                # *why* a cog failed to import.
+                logger.exception("Failed to load extension %s", extension)
 
 if __name__ == "__main__":
+    setup_logging(DebugMode)
     asyncio.run(main())
-    bot.run(os.environ.get("TOKEN"))
-    print("Bot started successfully.")
+    # log_handler=None stops discord.py from installing its own handler on top
+    # of ours, which would duplicate every line and bypass the log file.
+    bot.run(os.environ.get("TOKEN"), log_handler=None)
+    logger.info("Bot stopped.")
