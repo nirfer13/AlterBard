@@ -41,6 +41,14 @@ FAILURE_THRESHOLD = 3
 # How long to keep the radio silent after a detected YouTube outage.
 FAILURE_COOLDOWN = 120
 
+# Names the bot gives its voice channel. The note emoji marks it as the music
+# channel at a glance in the channel list. Discord rate-limits channel renames
+# to two per ten minutes, which is why these are only set on startup and on the
+# Friday playlist switch.
+CHANNEL_NAME_FANTASY = "🎵・Scena Barda・🎵"
+CHANNEL_NAME_PARTY = "🎶・Vixapol!!!・🎶"
+CHANNEL_NAME_PARTY_SWITCH = "🎶・MORDOWNIA!!!・🎶"
+
 OPTIONS = {
     "1️⃣": 0,
     "2⃣": 1,
@@ -61,6 +69,54 @@ async def search_youtube(query: str) -> wavelink.Search:
     """
 
     return await wavelink.Playable.search(query.strip("<>"), source=YT_SOURCE)
+
+def _is_url(value: str) -> bool:
+    return value.startswith(("http://", "https://"))
+
+def parse_playlist_entry(line: str) -> tuple:
+    """Split a playlist line into a display title and an optional exact URL.
+
+    Voted-in tracks are stored as "Title<TAB>URL" so the radio replays exactly
+    the video that won the vote, instead of whatever a title search happens to
+    rank first. Older title-only entries are still valid and simply come back
+    with no URL, which makes the two formats mixable in one file.
+    """
+
+    line = line.strip()
+
+    title, tab, tail = line.rpartition("\t")
+    if tab and _is_url(tail.strip()):
+        return title.strip(), tail.strip()
+
+    # Tolerate an entry pasted by hand as "Title https://..." with a space.
+    title, space, tail = line.rpartition(" ")
+    if space and _is_url(tail):
+        return title.strip(), tail
+
+    return line, None
+
+def format_playlist_entry(track: wavelink.Playable) -> str:
+    """Render a track for storage: the title stays first so the file remains
+    readable and editable by hand, with the URL pinned after a tab."""
+
+    if track.uri:
+        return f"{track.title}\t{track.uri}"
+
+    return track.title
+
+def read_playlist_titles(file: str) -> list:
+    """Return only the titles from a playlist file, ignoring any stored URLs.
+
+    Duplicate detection compares titles, so it has to look past the URL half
+    of an entry.
+    """
+
+    with open(file, "r", encoding="utf8") as handle:
+        return [
+            parse_playlist_entry(line)[0]
+            for line in handle.read().splitlines()
+            if line.strip()
+        ]
 
 class AlreadyConnectedToChannel(commands.CommandError):
     pass
@@ -191,8 +247,7 @@ class Player(wavelink.Player):
             await msg.delete()
         else:
             await msg.delete()
-            with open(file, "r", encoding="utf8") as f:
-                lines = f.read().splitlines()
+            lines = read_playlist_titles(file)
 
             if tracks[OPTIONS[reaction.emoji]].title in lines:
                 await ctx.send("<@" + str(ctx.author.id) + ">, " +
@@ -233,34 +288,56 @@ class Music(commands.Cog):
         # playlist once and fall silent, as the queue never returns from history.
         self.player.queue.mode = wavelink.QueueMode.loop_all
 
-        for query in playlist:
-            query = str(query).strip()
-            if not query:
+        for line in playlist:
+            line = str(line).strip()
+            if not line:
                 continue
+
+            title, url = parse_playlist_entry(line)
 
             if not self.player.connected:
                 await voice_channel.connect(cls=self.player)
 
             try:
-                await self.player.add_singletrack(await search_youtube(query))
+                await self.queue_entry(title, url)
                 added += 1
             except NoTracksFound:
                 # YouTube returned nothing - e.g. the video was taken down.
-                logger.warning("No results for: %s", query)
-                skipped.append(query)
+                logger.warning("No results for: %s", title)
+                skipped.append(title)
             except LongTrack:
-                logger.warning("All results too long (>%s min): %s", MAX_TRACK_MINUTES, query)
-                skipped.append(query)
+                logger.warning("All results too long (>%s min): %s", MAX_TRACK_MINUTES, title)
+                skipped.append(title)
             except wavelink.WavelinkException as exc:
                 # A Lavalink/YouTube side error - it must not block the rest.
-                logger.warning("Lavalink could not handle '%s': %s", query, exc, exc_info=True)
-                skipped.append(query)
+                logger.warning("Lavalink could not handle '%s': %s", title, exc, exc_info=True)
+                skipped.append(title)
 
         logger.info("Loaded %s tracks, skipped %s.", added, len(skipped))
         if skipped:
             logger.info("Skipped: %s", " | ".join(skipped[:10]))
 
         return added, skipped
+
+    async def queue_entry(self, title: str, url: str = None):
+        """Queue one playlist entry, preferring its pinned URL.
+
+        The fallback to a title search is what keeps the radio from losing a
+        track permanently: a pinned video can be taken down, made private or
+        geo-blocked, and then only a fresh search will find another upload.
+        """
+
+        if url:
+            try:
+                await self.player.add_singletrack(await search_youtube(url))
+                return
+            except (NoTracksFound, LongTrack, wavelink.WavelinkException) as exc:
+                logger.warning(
+                    "Pinned link failed for '%s' (%s): %s - falling back to a search.",
+                    title, url, exc
+                )
+
+        await self.player.add_singletrack(await search_youtube(title))
 
     #Check timestamp task
     async def msg1(self, player: wavelink.Player, party_list: list, fantasy_list: list):
@@ -280,7 +357,7 @@ class Music(commands.Cog):
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
                 AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
-                await VoiceChannel.edit(name="MORDOWNIA!!!")
+                await VoiceChannel.edit(name=CHANNEL_NAME_PARTY_SWITCH)
                 await LogChannel.send("Zmiana playlisty na imprezową.")
                 await AnnouceChannel.send("HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
                 guild = self.bot.get_guild(GuildID)
@@ -300,7 +377,7 @@ class Music(commands.Cog):
 
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
-                await VoiceChannel.edit(name="Scena Barda")
+                await VoiceChannel.edit(name=CHANNEL_NAME_FANTASY)
                 await LogChannel.send("Zmiana playlisty na fantasy.")
                 guild = self.bot.get_guild(GuildID)
                 userBot = guild.get_member(BardID)
@@ -346,12 +423,12 @@ class Music(commands.Cog):
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
-            await VoiceChannel.edit(name="Vixapol!!!")
+            await VoiceChannel.edit(name=CHANNEL_NAME_PARTY)
             await LogChannel.send("Zmiana playlisty na imprezową.")
             await userBot.edit(nick="DJ Stachu")
         else:
             list = fantasy_list
-            await VoiceChannel.edit(name="Scena Barda")
+            await VoiceChannel.edit(name=CHANNEL_NAME_FANTASY)
             await LogChannel.send("Zmiana playlisty na fantasy.")
             await userBot.edit(nick="Bard Stasiek")
 
@@ -542,8 +619,7 @@ class Music(commands.Cog):
                           query: str,
                           file: str="fantasy_list.txt"):
 
-        with open(file, "r", encoding="utf8") as f:
-            lines = f.read().splitlines()
+        lines = read_playlist_titles(file)
 
         if query in lines:
             await ctx.send("<@" + str(ctx.author.id) + ">, mam już taki utwór w repertuarze, więc musisz wybrać coś innego.")
@@ -737,8 +813,10 @@ class Music(commands.Cog):
                 await msg.delete()
                 await self.bard_support(ctx, reacters, ctx.author, True)
 
+                # Store the URL alongside the title, so this exact video comes
+                # back on every restart rather than the top search hit.
                 with open(file, "a", encoding="utf8") as file_object:
-                    file_object.write(f"\n{query}")
+                    file_object.write(f"\n{format_playlist_entry(query)}")
                 Channel = self.bot.get_channel(CommandChannelID)
                 await Channel.send("Utwór " + str(query.title) + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
                 if add:
