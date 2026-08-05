@@ -2,7 +2,9 @@ import asyncio
 import logging
 import datetime as dt
 import json
+import os
 import random
+import tempfile
 import typing as t
 
 import discord
@@ -123,9 +125,35 @@ def load_pending_votes() -> list:
         logger.warning("Could not read %s: %s", PENDING_VOTES_FILE, exc)
         return []
 
+def save_json_atomically(path: str, data) -> None:
+    """Write JSON so that an interrupted write cannot destroy the old file.
+
+    Writing straight into the target truncates it first, so a crash or a power
+    cut mid-write leaves it empty or half-written. authors_list.json holds the
+    entire helper ranking, which is not something to lose that way. Writing to
+    a temporary file and renaming is atomic, on Windows too.
+    """
+
+    directory = os.path.dirname(os.path.abspath(path)) or "."
+
+    with tempfile.NamedTemporaryFile("w", encoding="utf8", dir=directory,
+                                     delete=False, suffix=".tmp") as handle:
+        temporary = handle.name
+        try:
+            json.dump(data, handle, indent=4, ensure_ascii=False)
+            handle.flush()
+            os.fsync(handle.fileno())
+        except BaseException:
+            # The original file is safe either way, but a failed write must not
+            # leave its half-finished temporary behind to pile up.
+            handle.close()
+            os.unlink(temporary)
+            raise
+
+    os.replace(temporary, path)
+
 def save_pending_votes(records: list) -> None:
-    with open(PENDING_VOTES_FILE, "w", encoding="utf8") as handle:
-        json.dump(records, handle, indent=4, ensure_ascii=False)
+    save_json_atomically(PENDING_VOTES_FILE, records)
 
 def count_votes(message: discord.Message) -> tuple:
     """Count the yes/no reactions on a vote message.
@@ -238,9 +266,10 @@ class Player(wavelink.Player):
 
         await self.queue.put_wait(track)
 
-        if not self.playing:
-            await self.start_playback()
-
+        # Deliberately does not start playback. Loading a playlist takes about
+        # 25 seconds, and starting whenever nothing happened to be playing cut
+        # the current track off part-way through the load. The caller starts it
+        # once instead.
         return track
 
     async def start_playback(self):
@@ -365,6 +394,11 @@ class Music(commands.Cog):
             try:
                 await self.queue_entry(title, url)
                 added += 1
+
+                # Start once, on the first track that made it into the queue.
+                # Everything after that is autoplay's job.
+                if added == 1 and not self.player.playing:
+                    await self.player.start_playback()
             except NoTracksFound:
                 # YouTube returned nothing - e.g. the video was taken down.
                 logger.warning("No results for: %s", title)
@@ -802,54 +836,50 @@ class Music(commands.Cog):
             logger.warning("Guild %s unavailable - skipping the vote rewards.", GuildID)
             return
 
-        with open(filename,'r+', encoding="utf8") as file:
+        with open(filename,'r', encoding="utf8") as file:
             # First we load existing data into a dict.
             file_data = json.load(file)
 
-            for user in users:
-                id = str(user.id)
-                if id != str(author_id):
-                    if id in file_data.keys():
-                        file_data[id] += 0.25
-                    else:
-                        file_data[id] = 0.25
-
-            if success:
-                id = str(author_id)
+        for user in users:
+            id = str(user.id)
+            if id != str(author_id):
                 if id in file_data.keys():
-                    file_data[id] += 1
+                    file_data[id] += 0.25
                 else:
-                    file_data[id] = 1
+                    file_data[id] = 0.25
 
-            json_object = json.dumps(file_data, indent=4)
-            # Sets file's current position at offset.
-            file.seek(0)
-            file.truncate(0) # need '0' when using r+
-            file.write(json_object)
+        if success:
+            id = str(author_id)
+            if id in file_data.keys():
+                file_data[id] += 1
+            else:
+                file_data[id] = 1
 
-            role1 = discord.utils.get(guild.roles, id=1054138582811549776) #Pomagier
-            role2 = discord.utils.get(guild.roles, id=1059766781889228820) #Mlodszy Bard
-            role3 = discord.utils.get(guild.roles, id=1059766769524424714) #Zastepca Barda
+        save_json_atomically(filename, file_data)
 
-            for reacter in users:
-                id = str(reacter.id)
-                # reaction.users() yields User objects, which have no roles.
-                # Roles can only be granted to a Member of this guild.
-                user = guild.get_member(reacter.id)
-                if user is None:
-                    continue
-                if id in file_data.keys() and user.id != 1004008220437778523:
-                    if file_data[id] >= 5 and file_data[id] < 20 and role1 not in user.roles:
-                        await user.add_roles(role1)
-                        await Channel.send("<@" + str(user.id) + ">! Za wkład w mój muzyczny rozwój otrzymałeś rangę mojego pomagiera! Kto wie, pomagaj mi dalej, a być może czeka Cię nagroda. <:Siur:717731500883181710>")
-                    if file_data[id] >= 20 and file_data[id] < 50 and role2 not in user.roles:
-                        await user.remove_roles(role1)
-                        await user.add_roles(role2)
-                        await Channel.send("<@" + str(user.id) + ">! Widzę,że nie odpuszczasz. W nagrodę dostałeś rangę Młodszego Barda! Może już wystarczy? <:Kermitpls:790963160106008607>")
-                    if file_data[id] >= 50 and role3 not in user.roles:
-                        await user.remove_roles(role2)
-                        await user.add_roles(role3)
-                        await Channel.send("<@" + str(user.id) + ">! Czekaj... Czy Ty chcesz mnie wygryźć? Dobra, możesz być moim zastępcą, ok? <:MonkaS:882181709100097587> ")
+        role1 = discord.utils.get(guild.roles, id=1054138582811549776) #Pomagier
+        role2 = discord.utils.get(guild.roles, id=1059766781889228820) #Mlodszy Bard
+        role3 = discord.utils.get(guild.roles, id=1059766769524424714) #Zastepca Barda
+
+        for reacter in users:
+            id = str(reacter.id)
+            # reaction.users() yields User objects, which have no roles.
+            # Roles can only be granted to a Member of this guild.
+            user = guild.get_member(reacter.id)
+            if user is None:
+                continue
+            if id in file_data.keys() and user.id != 1004008220437778523:
+                if file_data[id] >= 5 and file_data[id] < 20 and role1 not in user.roles:
+                    await user.add_roles(role1)
+                    await Channel.send("<@" + str(user.id) + ">! Za wkład w mój muzyczny rozwój otrzymałeś rangę mojego pomagiera! Kto wie, pomagaj mi dalej, a być może czeka Cię nagroda. <:Siur:717731500883181710>")
+                if file_data[id] >= 20 and file_data[id] < 50 and role2 not in user.roles:
+                    await user.remove_roles(role1)
+                    await user.add_roles(role2)
+                    await Channel.send("<@" + str(user.id) + ">! Widzę,że nie odpuszczasz. W nagrodę dostałeś rangę Młodszego Barda! Może już wystarczy? <:Kermitpls:790963160106008607>")
+                if file_data[id] >= 50 and role3 not in user.roles:
+                    await user.remove_roles(role2)
+                    await user.add_roles(role3)
+                    await Channel.send("<@" + str(user.id) + ">! Czekaj... Czy Ty chcesz mnie wygryźć? Dobra, możesz być moim zastępcą, ok? <:MonkaS:882181709100097587> ")
 
         if success:
             await Channel.send("<@" + str(author_id)+ ">, Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[str(author_id)]) + " razy!")

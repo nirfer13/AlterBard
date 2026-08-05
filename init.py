@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import logging
 import os
 import asyncio
+from pathlib import Path
 
 from bot_logging import setup_logging
 from globals.globalvariables import DebugMode
@@ -33,7 +34,11 @@ async def main():
     """Main bot applicaiton is starting."""
 
     logger.info("Bot is starting...")
-    for file in os.listdir("C:\\Programowanie\\AlterBard\\cogs"):
+    # Resolved from this file's location rather than hardcoded: the listdir sits
+    # outside the try below, so a wrong path crashes the bot before it starts,
+    # and the repo lives under a different path on every machine.
+    cogs_dir = Path(__file__).resolve().parent / "cogs"
+    for file in os.listdir(cogs_dir):
         if file.endswith(".py"):
             extension = file[:-3]
             try:
