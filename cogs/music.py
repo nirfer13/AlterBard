@@ -48,8 +48,11 @@ CHANNEL_NAME_FANTASY = "Scena Barda"
 CHANNEL_NAME_PARTY = "Vixapol!!!"
 CHANNEL_NAME_PARTY_SWITCH = "MORDOWNIA!!!"
 
-# The topic is what shows up under the channel name in the client.
-CHANNEL_TOPIC_FANTASY = "🎵🎶 Klimaty RPG 🎶🎵"
+# The topic is what shows up under the channel name in the client. Community
+# servers filter these through a blocked-word list: "Klimaty RPG" was refused
+# with "Field contains at least one word that is not allowed", most likely over
+# RPG reading as a weapon. set_channel_look keeps a refusal non-fatal either way.
+CHANNEL_TOPIC_FANTASY = "🎵🎶 Klimaty fantasy 🎶🎵"
 CHANNEL_TOPIC_PARTY = "🎵🎶 Piątkowa Vixa 🎶🎵"
 
 OPTIONS = {
@@ -322,6 +325,32 @@ class Music(commands.Cog):
 
         return added, skipped
 
+    async def set_channel_look(self, channel: discord.VoiceChannel, name: str, topic: str):
+        """Set the voice channel name and topic without ever failing the caller.
+
+        Community servers run channel names and topics through a blocked-word
+        filter, and a rejected value comes back as a 400. That must not abort
+        startup: this used to propagate out of on_wavelink_node_ready and stop
+        the playlist from loading at all, leaving the radio silent over a purely
+        cosmetic detail.
+
+        Name and topic go in one request, because Discord only allows two
+        channel edits per ten minutes. If that is refused, the name alone is
+        retried - it is the part people actually navigate by.
+        """
+
+        try:
+            await channel.edit(name=name, topic=topic)
+            return
+        except discord.HTTPException as exc:
+            logger.warning("Could not set the channel name and topic (%s). "
+                           "Retrying with the name only.", exc)
+
+        try:
+            await channel.edit(name=name)
+        except discord.HTTPException as exc:
+            logger.warning("Could not set the channel name either: %s", exc)
+
     async def queue_entry(self, title: str, url: str = None):
         """Queue one playlist entry, preferring its pinned URL.
 
@@ -360,7 +389,7 @@ class Music(commands.Cog):
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
                 AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
-                await VoiceChannel.edit(name=CHANNEL_NAME_PARTY_SWITCH, topic=CHANNEL_TOPIC_PARTY)
+                await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY_SWITCH, CHANNEL_TOPIC_PARTY)
                 await LogChannel.send("Zmiana playlisty na imprezową.")
                 await AnnouceChannel.send("HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
                 guild = self.bot.get_guild(GuildID)
@@ -380,7 +409,7 @@ class Music(commands.Cog):
 
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
-                await VoiceChannel.edit(name=CHANNEL_NAME_FANTASY, topic=CHANNEL_TOPIC_FANTASY)
+                await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY, CHANNEL_TOPIC_FANTASY)
                 await LogChannel.send("Zmiana playlisty na fantasy.")
                 guild = self.bot.get_guild(GuildID)
                 userBot = guild.get_member(BardID)
@@ -426,12 +455,12 @@ class Music(commands.Cog):
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
-            await VoiceChannel.edit(name=CHANNEL_NAME_PARTY, topic=CHANNEL_TOPIC_PARTY)
+            await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY, CHANNEL_TOPIC_PARTY)
             await LogChannel.send("Zmiana playlisty na imprezową.")
             await userBot.edit(nick="DJ Stachu")
         else:
             list = fantasy_list
-            await VoiceChannel.edit(name=CHANNEL_NAME_FANTASY, topic=CHANNEL_TOPIC_FANTASY)
+            await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY, CHANNEL_TOPIC_FANTASY)
             await LogChannel.send("Zmiana playlisty na fantasy.")
             await userBot.edit(nick="Bard Stasiek")
 
