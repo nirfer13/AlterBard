@@ -141,8 +141,11 @@ def process(path, dry_run):
 
     if not dry_run and pinned:
         backup = path.with_suffix(path.suffix + ".bak")
-        backup.write_text("\n".join(lines) + "\n", encoding="utf8")
-        path.write_text("\n".join(output) + "\n", encoding="utf8")
+        # newline="\n" keeps the files on LF endings. Without it Python would
+        # rewrite every line to CRLF on Windows, turning a handful of pinned
+        # links into a diff touching all 189 entries.
+        backup.write_text("\n".join(lines) + "\n", encoding="utf8", newline="\n")
+        path.write_text("\n".join(output) + "\n", encoding="utf8", newline="\n")
         print(f"  Kopia zapasowa: {backup.name}")
 
     return pinned, already, failed
