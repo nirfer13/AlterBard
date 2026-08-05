@@ -6,8 +6,12 @@ spring:
     banner-mode: log
 lavalink:
   plugins:
-    # Replace VERSION with the current version as shown by the Releases tab or a long commit hash for snapshots.
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.5"
+    # The plugin version MUST be kept current. YouTube regularly changes the
+    # script that deciphers stream URLs; an old plugin stops understanding it
+    # and EVERY track fails with "Must find action functions from script".
+    # Lavalink downloads the version given here into plugins/ on startup.
+    # Latest releases: https://github.com/lavalink-devs/youtube-source/releases
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.2"
       snapshot: false # Set to true if you want to use a snapshot version.
 
     # You can configure individual clients with the following.
@@ -90,6 +94,17 @@ plugins:
         - MUSIC
         - ANDROID_VR
         - WEB
-        - WEBEMBEDDED 
+        - WEBEMBEDDED
+        # TV as the last resort: it is the only OAuth-capable client, so
+        # without it the authorisation below did nothing (Lavalink logged
+        # "OAuth has been enabled without registering any OAuth-compatible clients").
+        - TV
       oauth:
+        # OAuth helps once YouTube starts rejecting the bot's traffic. It needs
+        # a ONE-TIME authorisation: on startup Lavalink prints a code in the log
+        # to enter at https://www.google.com/device.
+        # NOTE: use a burner account, not your main one.
+        # After authorising, paste the refresh token into refreshToken so this
+        # does not have to be repeated on every restart.
         enabled: true # Whether to enable OAuth for the YouTube plugin.
+        # refreshToken: "paste the refresh token here after authorising"

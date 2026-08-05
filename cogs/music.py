@@ -2,7 +2,6 @@ import asyncio
 import datetime as dt
 import json
 import random
-import re
 import typing as t
 
 import discord
@@ -16,7 +15,7 @@ VoteChannelID = 1059731255786229770
 AnnouceChannelID = 696932659833733131
 #CommandChannelID = 1057198781206106153 #Debug
 CommandChannelID = 776379796367212594
-VoiceChannelID = 1056200069952589924 # Kanał Staśka
+VoiceChannelID = 1056200069952589924 # Stasiek's channel
 #VoiceChannelID = 687630935419912204
 LogChannelID = 1057198781206106153
 BardID = 1004008220437778523
@@ -24,7 +23,21 @@ GuildID = 686137998177206281
 votesReq = 6
 #votesReq = 2
 
-URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+# Every track comes from YouTube - Lavalink's built-in sources are disabled
+# in application.yml and the youtube-plugin handles search and playback.
+YT_SOURCE = wavelink.TrackSource.YouTube
+
+# Tracks longer than this many minutes never make it into the repertoire.
+MAX_TRACK_MINUTES = 9
+
+# How many failures in a row mean a YouTube outage rather than a single
+# taken-down video. Wavelink disables autoplay for good after 3 consecutive
+# errors, so we step in before that happens.
+FAILURE_THRESHOLD = 3
+
+# How long to keep the radio silent after a detected YouTube outage.
+FAILURE_COOLDOWN = 120
+
 OPTIONS = {
     "1️⃣": 0,
     "2⃣": 1,
@@ -36,6 +49,15 @@ VOTES = {
     "✅": 0,
     "❌": 1
 }
+
+async def search_youtube(query: str) -> wavelink.Search:
+    """Search YouTube for a track.
+
+    Playable.search detects URLs on its own and skips the search prefix for
+    them, so this one function handles both plain titles and ready links.
+    """
+
+    return await wavelink.Playable.search(query.strip("<>"), source=YT_SOURCE)
 
 class AlreadyConnectedToChannel(commands.CommandError):
     pass
@@ -64,8 +86,13 @@ class LongTrack(commands.CommandError):
 class Player(wavelink.Player):
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # With loop_all, once the whole playlist has been played wavelink moves
+        # the tracks from history back into the queue - the radio never stops.
         self.queue.mode = wavelink.QueueMode.loop_all
-        self.autoplay = wavelink.AutoPlayMode.enabled
+        # partial, not enabled: wavelink should play *our* playlist in order
+        # instead of topping it up with YouTube recommendations that never went
+        # through the vote and do not fit the mood.
+        self.autoplay = wavelink.AutoPlayMode.partial
         self.bot = bot
 
     async def teardown(self):
@@ -75,7 +102,7 @@ class Player(wavelink.Player):
         except KeyError:
             pass
 
-    async def add_singletrack(self, tracks: wavelink.Search):
+    async def add_singletrack(self, tracks: wavelink.Search) -> wavelink.Playable:
         """Add a single track to the queue."""
 
         if not tracks:
@@ -85,29 +112,32 @@ class Player(wavelink.Player):
             # tracks is a playlist...
             raise NoTracksFound
 
-        if len(tracks) > 1:
-            for track in tracks:
-                if track.length/60/1000 < 9:
-                    track: wavelink.Playable = track
-                    await self.queue.put_wait(track)
-                    break
-                else:
-                    pass
-        else:
-            track: wavelink.Playable = tracks[0]
-            await self.queue.put_wait(track)
+        # Take the first result within the length limit - longer hits are
+        # usually hour-long compilations rather than the track we asked for.
+        track = next(
+            (t for t in tracks if t.length / 60 / 1000 < MAX_TRACK_MINUTES),
+            None
+        )
 
-        if not self.playing and not self.queue.is_empty:
-            track: wavelink.Playable = tracks[0]
+        if track is None:
+            raise LongTrack
+
+        await self.queue.put_wait(track)
+
+        if not self.playing:
             await self.start_playback()
+
+        return track
 
     async def start_playback(self):
         """Get first track from the queue and start playing."""
 
-        if not self.queue.is_empty:
-            track = self.queue.get()
-            print(track)
-            await self.play(track)
+        if self.queue.is_empty:
+            return
+
+        track = self.queue.get()
+        print(f"Odtwarzam: {track}")
+        await self.play(track)
 
     async def get_track(self, ctx, tracks, file: str="fantasy_list.txt") -> wavelink.Playable:
         """Show currently playing track."""
@@ -172,6 +202,11 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.wavelink = wavelink
+        self.player = None
+        # How many tracks in a row failed to play.
+        self._failed_tracks = 0
+        # Makes sure only one radio recovery attempt runs at a time.
+        self._recovery_lock = asyncio.Lock()
     # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -181,8 +216,51 @@ class Music(commands.Cog):
         await self.delete_bard_messages()
         await self.setup_hook()
 
+    async def load_playlist(self, playlist: list, voice_channel: discord.VoiceChannel):
+        """Search YouTube for every playlist entry and queue it.
+
+        Returns (number of tracks added, list of skipped queries).
+        """
+
+        added = 0
+        skipped = []
+
+        # queue.reset() on a playlist switch puts the queue mode back to
+        # "normal". Without restoring loop_all the radio would play the
+        # playlist once and fall silent, as the queue never returns from history.
+        self.player.queue.mode = wavelink.QueueMode.loop_all
+
+        for query in playlist:
+            query = str(query).strip()
+            if not query:
+                continue
+
+            if not self.player.connected:
+                await voice_channel.connect(cls=self.player)
+
+            try:
+                await self.player.add_singletrack(await search_youtube(query))
+                added += 1
+            except NoTracksFound:
+                # YouTube returned nothing - e.g. the video was taken down.
+                print(f"Brak wyników dla: {query}")
+                skipped.append(query)
+            except LongTrack:
+                print(f"Wszystkie wyniki za długie (>{MAX_TRACK_MINUTES} min): {query}")
+                skipped.append(query)
+            except wavelink.WavelinkException as exc:
+                # A Lavalink/YouTube side error - it must not block the rest.
+                print(f"Lavalink nie poradził sobie z '{query}': {exc}")
+                skipped.append(query)
+
+        print(f"Załadowano {added} utworów, pominięto {len(skipped)}.")
+        if skipped:
+            print("Pominięte: " + " | ".join(skipped[:10]))
+
+        return added, skipped
+
     #Check timestamp task
-    async def msg1(self, ctx, player: wavelink.Player, party_list: list, fantasy_list: list):
+    async def msg1(self, player: wavelink.Player, party_list: list, fantasy_list: list):
         print("Loop check 1.")
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         actDay = timestamp.strftime("%a")
@@ -210,24 +288,8 @@ class Music(commands.Cog):
                 random.shuffle(list)
                 await player.stop()
                 player.queue.reset()
-                
-                for query in list:
-                    query = str(query)
-                    print("Single query: " + query)
-                    if not self.player.connected:
-                        vc: Player = await VoiceChannel.connect(cls=self.player)
-                    if query is None:
-                        pass
-                    else:
-                        query = query.strip("<>")
-                        try:
-                            if not re.match(URL_REGEX, query):
-                                tracks: list[wavelink.Playable] = await wavelink.Playable.search(
-                                                                                                    query)
 
-                            await self.player.add_singletrack(tracks)
-                        except Exception as e:
-                            print("Exception: %s", e)
+                await self.load_playlist(list, VoiceChannel)
 
             elif (timestamp.strftime("%a") != "Fri" and actDay == "Fri"):
                 
@@ -245,24 +307,9 @@ class Music(commands.Cog):
                 await player.stop()
                 player.queue.reset()
                 random.shuffle(list)
-                
-                for query in list:
-                    query = str(query)
-                    print("Single query: " + query)
-                    if not self.player.connected:
-                        vc: Player = await VoiceChannel.connect(cls=self.player)
-                    if query is None:
-                        pass
-                    else:
-                        query = query.strip("<>")
-                        try:
-                            if not re.match(URL_REGEX, query):
-                                tracks: list[wavelink.Playable] = await wavelink.Playable.search(
-                                                                                                query)
 
-                            await self.player.add_singletrack(tracks)
-                        except Exception as e:
-                            print("Exception: %s", e)
+                await self.load_playlist(list, VoiceChannel)
+
             print("Loop check 2.")
             await asyncio.sleep(3600)
 
@@ -307,32 +354,22 @@ class Music(commands.Cog):
 
         random.shuffle(list)
 
-        #function to get context
-        channel = self.bot.get_channel(LogChannelID)
-        msg = await channel.fetch_message(1177811269164748872)
-        ctx = await self.bot.get_context(msg)
-        await channel.send("Bard gotowy do śpiewania!")
+        await LogChannel.send("Bard gotowy do śpiewania!")
         self.player = Player(bot=self.bot)
         vc: Player = await VoiceChannel.connect(cls=self.player)
 
-        for query in list:
-            query = str(query)
-            print("Single query: " + query)
-            if not self.player.connected:
-                vc: Player = await VoiceChannel.connect(cls=self.player)
-            if query is None:
-                pass
-            else:
-                query = query.strip("<>")
-                try:
-                    if not re.match(URL_REGEX, query):
-                        tracks: wavelink.Search = await wavelink.Playable.search(query, source= wavelink.TrackSource.YouTube)
-                    await self.player.add_singletrack(tracks)
-                except Exception as e:
-                    print("Exception: %s", e)
+        added, skipped = await self.load_playlist(list, VoiceChannel)
+        await LogChannel.send(f"Załadowano {added} utworów z YouTube, pominięto {len(skipped)}.")
+
+        if not added:
+            await LogChannel.send(
+                "Nie udało się załadować **żadnego** utworu z YouTube. "
+                "Sprawdź logi Lavalinka - najczęściej oznacza to przeterminowany "
+                "youtube-plugin albo brak autoryzacji OAuth."
+            )
 
         # Check timestamp and start task
-        self.task = self.bot.loop.create_task(self.msg1(ctx, self.player, party_list, fantasy_list))
+        self.task = self.bot.loop.create_task(self.msg1(self.player, party_list, fantasy_list))
 
     @commands.command("play")
     async def play(self, ctx: commands.Context, *, search: str) -> None:
@@ -343,7 +380,7 @@ class Music(commands.Cog):
         else:
             vc: wavelink.Player = ctx.voice_client
 
-        tracks: list[wavelink.Playable] = await wavelink.Playable.search(search)
+        tracks: wavelink.Search = await search_youtube(search)
         if not tracks:
             await ctx.send(f'Przepraszam, nie mogę znaleźć podanego utworu: `{search}`')
             return
@@ -358,36 +395,124 @@ class Music(commands.Cog):
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         """Show currently playing track."""
 
+        # A track started, so the earlier errors were one-offs.
+        self._failed_tracks = 0
+
+        # We do not refill the queue by hand here: with QueueMode.loop_all
+        # wavelink puts the played track into history itself and moves history
+        # back into the queue once it empties. A manual put_wait duplicated
+        # every single track.
+        player = payload.player or self.player
+        left = len(player.queue) if player else 0
+        print(f"Gram: {payload.track.title} | w kolejce: {left}")
+
         try:
             activity = discord.CustomActivity(f"Odgrywa: {payload.track.title}")
-            await self.player.queue.put_wait(self.player.current)
-            count = len(str(self.player.queue)[2:-2].split('\", \"'))
-            print(f"Zostało: {count}")
             await self.bot.change_presence(status=discord.Status.do_not_disturb,
                                         activity=activity)
-        except:
-            print("Error during start of the track.")
+        except discord.HTTPException as exc:
+            print(f"Nie udało się ustawić statusu: {exc}")
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         """Get next track after finishing previous one."""
-        print("Track finished.")
-    #     await self.player.start_playback()
+        print(f"Utwór zakończony ({payload.reason}).")
 
-        if not self.player.playing:
+        # Only react to the radio - the $play command builds its own player.
+        if not self.is_radio_player(payload.player):
+            return
+
+        # Wavelink's autoplay starts the next track. All that is left here is a
+        # safety net for the case where the player ends up with nothing playing.
+        if payload.reason in ("replaced", "stopped"):
+            return
+
+        await asyncio.sleep(2)
+
+        if not self.player.playing and not self._recovery_lock.locked():
+            print("Autoplay nie ruszył dalej - wznawiam radio ręcznie.")
             await self.player.start_playback()
-            print("RESTART")
+
+    def is_radio_player(self, player) -> bool:
+        """Whether the event belongs to the radio player, not a one-off $play one."""
+
+        return self.player is not None and (player is None or player is self.player)
+
+    @commands.Cog.listener()
+    async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload):
+        """A track blew up during playback."""
+
+        if self.is_radio_player(payload.player):
+            await self.handle_track_failure(payload.track, str(payload.exception))
+
+    @commands.Cog.listener()
+    async def on_wavelink_track_stuck(self, payload: wavelink.TrackStuckEventPayload):
+        """A track stopped returning audio data."""
+
+        if self.is_radio_player(payload.player):
+            await self.handle_track_failure(payload.track, f"utwór zaciął się ({payload.threshold} ms)")
+
+    async def handle_track_failure(self, track: wavelink.Playable, reason: str) -> None:
+        """React to a track that could not be played.
+
+        A single miss (a taken-down video) is normal - autoplay simply moves
+        on. Several in a row mean a YouTube outage: without a pause autoplay
+        burns through the whole queue in seconds, and after three errors
+        wavelink disables autoplay for good and the radio goes quiet.
+        """
+
+        self._failed_tracks += 1
+        print(f"Błąd odtwarzania '{track}': {reason} (z rzędu: {self._failed_tracks})")
+
+        if self._failed_tracks < FAILURE_THRESHOLD or self._recovery_lock.locked():
+            return
+
+        async with self._recovery_lock:
+            player = self.player
+            if player is None:
+                return
+
+            previous_mode = player.autoplay
+            player.autoplay = wavelink.AutoPlayMode.disabled
+            await player.stop(force=True)
+
+            LogChannel = self.bot.get_channel(LogChannelID)
+            if LogChannel is not None:
+                await LogChannel.send(
+                    f"{self._failed_tracks} utworów z rzędu nie dało się odtworzyć "
+                    f"(ostatni błąd: `{reason[:200]}`). Milknę na {FAILURE_COOLDOWN}s. "
+                    "Jeśli to się powtarza, sprawdź wersję youtube-plugin w application.yml."
+                )
+
+            await asyncio.sleep(FAILURE_COOLDOWN)
+
+            # Wavelink counts its own errors and after three in a row stops
+            # playing anything - and it never resets that counter by itself.
+            # Without this the radio stays silent until the bot is restarted.
+            if hasattr(player, "_error_count"):
+                player._error_count = 0
+
+            self._failed_tracks = 0
+            player.autoplay = previous_mode
+            await player.start_playback()
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        if not member.bot and self.player:
-            voice_channel = self.bot.get_channel(VoiceChannelID)
-            current_voice_channel = self.player.bot.voice_clients[0].channel
+        if member.bot or self.player is None:
+            return
 
-            if current_voice_channel.id != VoiceChannelID and not [m for m in current_voice_channel.members if not m.bot]:
-            
-                print("Changing voice channel automatically.")
-                channel = await self.player.move_to(voice_channel)
+        # The player may still have no channel (e.g. while the bot starts up) -
+        # it is then None or the MISSING sentinel, so we test for truthiness.
+        current_voice_channel = self.player.channel
+        if not current_voice_channel:
+            return
+
+        voice_channel = self.bot.get_channel(VoiceChannelID)
+
+        if current_voice_channel.id != VoiceChannelID and not [m for m in current_voice_channel.members if not m.bot]:
+
+            print("Changing voice channel automatically.")
+            await self.player.move_to(voice_channel)
 
     async def is_channel(ctx):
         return ctx.channel.id == CommandChannelID or ctx.channel.id == 1057198781206106153
@@ -428,18 +553,19 @@ class Music(commands.Cog):
             await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu jest za krótki. Spróbuj coś dłuższego.")
             raise InvalidTrackName
 
-        query = query.strip("<>")
-
-        if not re.match(URL_REGEX, query):
-            tracks: list[wavelink.Playable] = await wavelink.Playable.search(
-                                                                                query)
+        try:
+            tracks: wavelink.Search = await search_youtube(query)
+        except wavelink.WavelinkException as exc:
+            print(f"Wyszukiwanie '{query}' nie powiodło się: {exc}")
+            await ctx.send("Nie udało mi się teraz zapytać YouTube'a. Spróbuj za chwilę.")
+            raise NoTracksFound
 
         track = await self.player.get_track(ctx, tracks, file)
 
         if track is None:
             return None
 
-        if track.length/60/1000 > 9:
+        if track.length/60/1000 > MAX_TRACK_MINUTES:
             await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
             raise LongTrack
 
@@ -689,10 +815,9 @@ class Music(commands.Cog):
     @commands.check(is_channel)
     async def next_command(self, ctx):
 
-        #await self.player.queue.put_wait(self.player.current)
-        #await self.player.skip()
-        await self.player.start_playback()
-        #await self.player.stop()
+        # skip() ends the current track and autoplay starts the next one - that
+        # way the track lands in history and comes back on the next lap.
+        await self.player.skip(force=True)
         await ctx.send("Kolejny utwór w kolejce...")
 
     @next_command.error
@@ -726,18 +851,21 @@ class Music(commands.Cog):
         )
         embed.set_author(name="Informacje o kolejce")
         embed.set_footer(text=f"{ctx.author.display_name}", icon_url=ctx.author.avatar)
-        embed.add_field(name="Aktualnie gra", value=self.player.current.title, inline=False)
+        current = self.player.current
+        embed.add_field(name="Aktualnie gra",
+                        value=current.title if current else "nic",
+                        inline=False)
 
-        print(str(self.player.queue))
-
-        if upcoming := str(self.player.queue)[8:-3].split("\", \""):
+        # The queue is iterable - titles used to be pulled out by slicing the
+        # queue's repr(), which fell apart on titles containing quotes.
+        if upcoming := [track.title for track in self.player.queue][:show]:
             embed.add_field(
                 name="Następny",
-                value="\n".join(t for t in upcoming[:show]),
+                value="\n".join(upcoming),
                 inline=False
             )
 
-        msg = await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
