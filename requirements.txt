@@ -5,7 +5,10 @@
 # not by Python itself - which is why there is no youtube-dl and no ffmpeg here.
 # The bot only asks Lavalink, through wavelink, to search and stream from YouTube.
 
+# wavelink must be 3.5.1+ : Lavalink 4.2 requires the "channelId" field in the
+# voice state payload, and older wavelink does not send it - the player is then
+# rejected and destroyed the moment it connects. 3.5.1 also brought DAVE support.
 discord.py==2.3.2
-wavelink==3.2.0
+wavelink==3.5.2
 python-dotenv==1.0.0
 yarl==1.9.2

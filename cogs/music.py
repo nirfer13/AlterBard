@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import datetime as dt
 import json
 import random
@@ -7,6 +8,8 @@ import typing as t
 import discord
 import wavelink
 from discord.ext import commands, tasks
+
+logger = logging.getLogger(__name__)
 
 global VoteChannelID, AnnouceChannelID, CommandChannelID, VoiceChannelID, LogChannelID, BardID, GuildID, votesReq
 #VoteChannelID = 1028340292895645696 #Debug
@@ -136,7 +139,7 @@ class Player(wavelink.Player):
             return
 
         track = self.queue.get()
-        print(f"Odtwarzam: {track}")
+        logger.info("Now playing: %s", track)
         await self.play(track)
 
     async def get_track(self, ctx, tracks, file: str="fantasy_list.txt") -> wavelink.Playable:
@@ -211,7 +214,7 @@ class Music(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Bot ready...")
+        logger.info("Bot ready...")
 
         await self.delete_bard_messages()
         await self.setup_hook()
@@ -243,34 +246,34 @@ class Music(commands.Cog):
                 added += 1
             except NoTracksFound:
                 # YouTube returned nothing - e.g. the video was taken down.
-                print(f"Brak wyników dla: {query}")
+                logger.warning("No results for: %s", query)
                 skipped.append(query)
             except LongTrack:
-                print(f"Wszystkie wyniki za długie (>{MAX_TRACK_MINUTES} min): {query}")
+                logger.warning("All results too long (>%s min): %s", MAX_TRACK_MINUTES, query)
                 skipped.append(query)
             except wavelink.WavelinkException as exc:
                 # A Lavalink/YouTube side error - it must not block the rest.
-                print(f"Lavalink nie poradził sobie z '{query}': {exc}")
+                logger.warning("Lavalink could not handle '%s': %s", query, exc, exc_info=True)
                 skipped.append(query)
 
-        print(f"Załadowano {added} utworów, pominięto {len(skipped)}.")
+        logger.info("Loaded %s tracks, skipped %s.", added, len(skipped))
         if skipped:
-            print("Pominięte: " + " | ".join(skipped[:10]))
+            logger.info("Skipped: %s", " | ".join(skipped[:10]))
 
         return added, skipped
 
     #Check timestamp task
     async def msg1(self, player: wavelink.Player, party_list: list, fantasy_list: list):
-        print("Loop check 1.")
+        logger.debug("Loop check 1.")
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         actDay = timestamp.strftime("%a")
-        print("Actual day: " + str(actDay))
+        logger.info("Actual day: %s", actDay)
 
         while True:
-            print("Inside infinite loop.")
+            logger.debug("Inside infinite loop.")
 
             timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
-            print(timestamp.strftime("%H:%M"))
+            logger.debug("Current time: %s", timestamp.strftime("%H:%M"))
             if timestamp.strftime("%a") == "Fri" and actDay != "Fri":
                 actDay = "Fri"
 
@@ -310,7 +313,7 @@ class Music(commands.Cog):
 
                 await self.load_playlist(list, VoiceChannel)
 
-            print("Loop check 2.")
+            logger.debug("Loop check 2.")
             await asyncio.sleep(3600)
 
     async def setup_hook(self) -> None:
@@ -323,9 +326,9 @@ class Music(commands.Cog):
     async def on_wavelink_node_ready(self, node: wavelink.Node) -> None:
         """Give info that node is ready"""
 
-        print(f"Node {node} is ready!")
+        logger.info("Node ready: %s", getattr(node, "node", node))
         voice_channel = self.bot.get_channel(VoiceChannelID)
-        print("Channel acquired.")
+        logger.info("Channel acquired.")
 
         #Create Fantasy Playlist
         with open('fantasy_list.txt', encoding="utf8") as f:
@@ -385,11 +388,11 @@ class Music(commands.Cog):
             await ctx.send(f'Przepraszam, nie mogę znaleźć podanego utworu: `{search}`')
             return
 
-        print(tracks[0])
+        logger.debug("Found track: %s", tracks[0])
         track: wavelink.Playable = tracks[0]
 
         await vc.play(track)
-        print("Playing song...")
+        logger.info("Playing song...")
 
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
@@ -404,19 +407,19 @@ class Music(commands.Cog):
         # every single track.
         player = payload.player or self.player
         left = len(player.queue) if player else 0
-        print(f"Gram: {payload.track.title} | w kolejce: {left}")
+        logger.info("Now playing: %s | queued: %s", payload.track.title, left)
 
         try:
             activity = discord.CustomActivity(f"Odgrywa: {payload.track.title}")
             await self.bot.change_presence(status=discord.Status.do_not_disturb,
                                         activity=activity)
         except discord.HTTPException as exc:
-            print(f"Nie udało się ustawić statusu: {exc}")
+            logger.warning("Could not set the presence: %s", exc)
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         """Get next track after finishing previous one."""
-        print(f"Utwór zakończony ({payload.reason}).")
+        logger.info("Track ended (%s).", payload.reason)
 
         # Only react to the radio - the $play command builds its own player.
         if not self.is_radio_player(payload.player):
@@ -430,7 +433,7 @@ class Music(commands.Cog):
         await asyncio.sleep(2)
 
         if not self.player.playing and not self._recovery_lock.locked():
-            print("Autoplay nie ruszył dalej - wznawiam radio ręcznie.")
+            logger.warning("Autoplay did not move on - restarting the radio manually.")
             await self.player.start_playback()
 
     def is_radio_player(self, player) -> bool:
@@ -462,7 +465,7 @@ class Music(commands.Cog):
         """
 
         self._failed_tracks += 1
-        print(f"Błąd odtwarzania '{track}': {reason} (z rzędu: {self._failed_tracks})")
+        logger.error("Playback error on '%s': %s (consecutive: %s)", track, reason, self._failed_tracks)
 
         if self._failed_tracks < FAILURE_THRESHOLD or self._recovery_lock.locked():
             return
@@ -511,7 +514,7 @@ class Music(commands.Cog):
 
         if current_voice_channel.id != VoiceChannelID and not [m for m in current_voice_channel.members if not m.bot]:
 
-            print("Changing voice channel automatically.")
+            logger.info("Changing voice channel automatically.")
             await self.player.move_to(voice_channel)
 
     async def is_channel(ctx):
@@ -525,11 +528,12 @@ class Music(commands.Cog):
         async for message in vote_channel.history(limit=15):
             if message.author == self.bot.user:
                 await message.delete()
+                counter += 1
 
-        print(f"MESSAGES COUNT {counter}")
+        logger.info("Deleted %s bard vote messages.", counter)
 
     async def singme(self, ctx, player: wavelink.Player):
-        print("Player changing the voice channel.")
+        logger.info("Player changing the voice channel.")
         voice_channel = self.bot.get_channel(VoiceChannelID)
         channel = await player.move_to(ctx.author.channel)
 
@@ -556,7 +560,7 @@ class Music(commands.Cog):
         try:
             tracks: wavelink.Search = await search_youtube(query)
         except wavelink.WavelinkException as exc:
-            print(f"Wyszukiwanie '{query}' nie powiodło się: {exc}")
+            logger.warning("Search for '%s' failed: %s", query, exc, exc_info=True)
             await ctx.send("Nie udało mi się teraz zapytać YouTube'a. Spróbuj za chwilę.")
             raise NoTracksFound
 
@@ -720,16 +724,16 @@ class Music(commands.Cog):
                     reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*12, check=_check)
                     posReaction = cache_msg.reactions[0].count
                     negReaction = cache_msg.reactions[1].count
-                    print("Reactions: " + str(posReaction) + " " + str(negReaction))
+                    logger.debug("Reactions: %s %s", posReaction, negReaction)
 
             if posReaction >= votesReq:
-                print("Positive reactions won.")
+                logger.info("Positive reactions won.")
                 reactions = cache_msg.reactions[0]
                 reacters = set()
-                print(reactions)
+                logger.debug("Reactions: %s", reactions)
                 async for user in reactions.users():
                     reacters.add(user)
-                print(reacters)
+                logger.debug("Voters: %s", reacters)
                 await msg.delete()
                 await self.bard_support(ctx, reacters, ctx.author, True)
 
@@ -739,12 +743,12 @@ class Music(commands.Cog):
                 await Channel.send("Utwór " + str(query.title) + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
                 if add:
                     if query is not None:
-                        print("Player")
+                        logger.debug("Player")
                         player.queue.put(query)
                         #await Channel.send(f"Dodano {query} do kolejki.")             
 
             else:
-                print("Negative reactions won.")
+                logger.info("Negative reactions won.")
                 reactions = cache_msg.reactions[1]
                 reacters = set()
                 async for user in reactions.users():
@@ -762,7 +766,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("▶")
 
         check = await self.check_track(ctx, self.player, query, "fantasy_list.txt")
-        print("Checked")
+        logger.debug("Checked")
         if check is not None:
             await self.voting(ctx, self.player, check, "fantasy_list.txt")
         else:
@@ -771,10 +775,10 @@ class Music(commands.Cog):
     @addfantasy_command.error
     async def addfantasy_command_cooldown(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
-            print("Command on cooldown.")
+            logger.info("Command on cooldown.")
             await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y <:Bedge:970576892874854400>.')
         if isinstance(error, commands.MissingRequiredArgument):
-            print("Invoke error.")
+            logger.info("Invoke error.")
             await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Wpisz $fantasy \"Tytuł utworu\".")
 
     @commands.command(name="party", aliases=["impreza"])
@@ -784,7 +788,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("▶")
 
         check = await self.check_track(ctx, self.player, query, "party_list.txt")
-        print("Track checked")
+        logger.debug("Track checked")
         if check is not None:
             await self.voting(ctx, self.player, check, "party_list.txt")
         else:
@@ -794,10 +798,10 @@ class Music(commands.Cog):
     @addparty_command.error
     async def addparty_command_cooldown(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
-            print("Command on cooldown.")
+            logger.info("Command on cooldown.")
             await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y <:Bedge:970576892874854400>.')
         if isinstance(error, commands.MissingRequiredArgument):
-            print("Invoke error.")
+            logger.info("Invoke error.")
             await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Wpisz $party \"Tytuł utworu\".")
 
     @commands.command(name="singme", aliases=["zagrajmi"])
@@ -823,7 +827,7 @@ class Music(commands.Cog):
     @next_command.error
     async def next_command_cooldown(self, ctx, error):
         if isinstance(error, commands.CommandOnCooldown):
-            print("Command on cooldown.")
+            logger.info("Command on cooldown.")
             await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60, 2)) + ' minut <:Bedge:970576892874854400>.')
 
     @commands.command(name="bardranking", aliases=["rankingbarda"])
