@@ -7,3 +7,6 @@ nohup.out
 # Runtime logs - the bot's own file plus Lavalink's rotated output.
 logs/bot.log*
 logs/spring.log.*.gz
+
+# Votes still in progress - runtime state, meaningless on another machine.
+pending_votes.json
