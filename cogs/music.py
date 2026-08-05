@@ -41,19 +41,18 @@ FAILURE_THRESHOLD = 3
 # How long to keep the radio silent after a detected YouTube outage.
 FAILURE_COOLDOWN = 120
 
-# Names and descriptions the bot gives its voice channel. Discord rate-limits
-# channel edits to two per ten minutes, so name and topic are always set in a
-# single edit() call - splitting them would burn the budget twice as fast.
+# Names the bot gives its voice channel. Setting a topic as well was dropped:
+# this server's blocked-word filter refused every variant tried, so the feature
+# only produced warnings.
 CHANNEL_NAME_FANTASY = "Scena Barda"
 CHANNEL_NAME_PARTY = "Vixapol!!!"
 CHANNEL_NAME_PARTY_SWITCH = "MORDOWNIA!!!"
 
-# The topic is what shows up under the channel name in the client. Community
-# servers filter these through a blocked-word list: "Klimaty RPG" was refused
-# with "Field contains at least one word that is not allowed", most likely over
-# RPG reading as a weapon. set_channel_look keeps a refusal non-fatal either way.
-CHANNEL_TOPIC_FANTASY = "🎵🎶 Klimaty fantasy 🎶🎵"
-CHANNEL_TOPIC_PARTY = "🎵🎶 Piątkowa Vixa 🎶🎵"
+# Votes in progress are kept here so a restart does not orphan them.
+PENDING_VOTES_FILE = "pending_votes.json"
+
+# How long a vote stays open before it is dropped.
+VOTE_TIMEOUT_HOURS = 12
 
 OPTIONS = {
     "1️⃣": 0,
@@ -101,14 +100,64 @@ def parse_playlist_entry(line: str) -> tuple:
 
     return line, None
 
-def format_playlist_entry(track: wavelink.Playable) -> str:
-    """Render a track for storage: the title stays first so the file remains
+def format_entry(title: str, uri: str = None) -> str:
+    """Render one playlist line: the title stays first so the file remains
     readable and editable by hand, with the URL pinned after a tab."""
 
-    if track.uri:
-        return f"{track.title}\t{track.uri}"
+    return f"{title}\t{uri}" if uri else title
 
-    return track.title
+def format_playlist_entry(track: wavelink.Playable) -> str:
+    return format_entry(track.title, track.uri)
+
+def load_pending_votes() -> list:
+    """Read the votes that were still open when the bot last stopped."""
+
+    try:
+        with open(PENDING_VOTES_FILE, "r", encoding="utf8") as handle:
+            return json.load(handle)
+    except FileNotFoundError:
+        return []
+    except (json.JSONDecodeError, OSError) as exc:
+        # A corrupt file must not stop the bot from starting; the worst case is
+        # that a few votes have to be cast again.
+        logger.warning("Could not read %s: %s", PENDING_VOTES_FILE, exc)
+        return []
+
+def save_pending_votes(records: list) -> None:
+    with open(PENDING_VOTES_FILE, "w", encoding="utf8") as handle:
+        json.dump(records, handle, indent=4, ensure_ascii=False)
+
+def count_votes(message: discord.Message) -> tuple:
+    """Count the yes/no reactions on a vote message.
+
+    Reactions are matched by emoji instead of by position: the old code read
+    reactions[0] and reactions[1], which silently misreads the tally as soon as
+    somebody adds an unrelated reaction first.
+    """
+
+    yes = no = 0
+
+    for reaction in message.reactions:
+        emoji = str(reaction.emoji)
+        if emoji == "✅":
+            yes = reaction.count
+        elif emoji == "❌":
+            no = reaction.count
+
+    return yes, no
+
+async def collect_reacters(message: discord.Message, emoji: str) -> set:
+    """Everyone who reacted to the message with the given emoji."""
+
+    voters = set()
+
+    for reaction in message.reactions:
+        if str(reaction.emoji) != emoji:
+            continue
+        async for user in reaction.users():
+            voters.add(user)
+
+    return voters
 
 def read_playlist_titles(file: str) -> list:
     """Return only the titles from a playlist file, ignoring any stored URLs.
@@ -271,13 +320,22 @@ class Music(commands.Cog):
         self._failed_tracks = 0
         # Makes sure only one radio recovery attempt runs at a time.
         self._recovery_lock = asyncio.Lock()
+        # on_ready runs again on every reconnect; startup must only run once.
+        self._votes_restored = False
     # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info("Bot ready...")
 
+        # on_ready fires again after every reconnect, and restarting the
+        # watchers each time would count the same vote several times over.
+        if self._votes_restored:
+            return
+        self._votes_restored = True
+
         await self.delete_bard_messages()
+        await self.restore_pending_votes()
         await self.setup_hook()
 
     async def load_playlist(self, playlist: list, voice_channel: discord.VoiceChannel):
@@ -325,31 +383,19 @@ class Music(commands.Cog):
 
         return added, skipped
 
-    async def set_channel_look(self, channel: discord.VoiceChannel, name: str, topic: str):
-        """Set the voice channel name and topic without ever failing the caller.
+    async def set_channel_look(self, channel: discord.VoiceChannel, name: str):
+        """Rename the voice channel without ever failing the caller.
 
-        Community servers run channel names and topics through a blocked-word
-        filter, and a rejected value comes back as a 400. That must not abort
-        startup: this used to propagate out of on_wavelink_node_ready and stop
-        the playlist from loading at all, leaving the radio silent over a purely
-        cosmetic detail.
-
-        Name and topic go in one request, because Discord only allows two
-        channel edits per ten minutes. If that is refused, the name alone is
-        retried - it is the part people actually navigate by.
+        Discord can refuse a rename - a blocked word, a rate limit - and that
+        must not abort startup. It used to: the exception propagated out of
+        on_wavelink_node_ready, so the playlist never loaded and the radio
+        stayed silent over a purely cosmetic detail.
         """
-
-        try:
-            await channel.edit(name=name, topic=topic)
-            return
-        except discord.HTTPException as exc:
-            logger.warning("Could not set the channel name and topic (%s). "
-                           "Retrying with the name only.", exc)
 
         try:
             await channel.edit(name=name)
         except discord.HTTPException as exc:
-            logger.warning("Could not set the channel name either: %s", exc)
+            logger.warning("Could not set the channel name: %s", exc)
 
     async def queue_entry(self, title: str, url: str = None):
         """Queue one playlist entry, preferring its pinned URL.
@@ -389,7 +435,7 @@ class Music(commands.Cog):
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
                 AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
-                await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY_SWITCH, CHANNEL_TOPIC_PARTY)
+                await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY_SWITCH)
                 await LogChannel.send("Zmiana playlisty na imprezową.")
                 await AnnouceChannel.send("HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
                 guild = self.bot.get_guild(GuildID)
@@ -409,7 +455,7 @@ class Music(commands.Cog):
 
                 LogChannel = self.bot.get_channel(LogChannelID)
                 VoiceChannel = self.bot.get_channel(VoiceChannelID)
-                await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY, CHANNEL_TOPIC_FANTASY)
+                await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY)
                 await LogChannel.send("Zmiana playlisty na fantasy.")
                 guild = self.bot.get_guild(GuildID)
                 userBot = guild.get_member(BardID)
@@ -455,12 +501,12 @@ class Music(commands.Cog):
         timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
         if timestamp.strftime("%a") == "Fri":
             list = party_list
-            await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY, CHANNEL_TOPIC_PARTY)
+            await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY)
             await LogChannel.send("Zmiana playlisty na imprezową.")
             await userBot.edit(nick="DJ Stachu")
         else:
             list = fantasy_list
-            await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY, CHANNEL_TOPIC_FANTASY)
+            await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY)
             await LogChannel.send("Zmiana playlisty na fantasy.")
             await userBot.edit(nick="Bard Stasiek")
 
@@ -630,16 +676,25 @@ class Music(commands.Cog):
         return ctx.channel.id == CommandChannelID or ctx.channel.id == 1057198781206106153
     
     async def delete_bard_messages(self):
-        """Delete bard vote messages."""
+        """Delete leftover bard vote messages, keeping the live ones."""
 
         vote_channel = self.bot.get_channel(VoteChannelID)
+        if vote_channel is None:
+            return
+
+        # Votes still running must survive this sweep - otherwise the restart
+        # that restore_pending_votes is meant to recover from would itself
+        # delete the very messages being recovered.
+        pending = {record["message_id"] for record in load_pending_votes()}
+
         counter = 0
         async for message in vote_channel.history(limit=15):
-            if message.author == self.bot.user:
+            if message.author == self.bot.user and message.id not in pending:
                 await message.delete()
                 counter += 1
 
-        logger.info("Deleted %s bard vote messages.", counter)
+        logger.info("Deleted %s bard vote messages, kept %s still running.",
+                    counter, len(pending))
 
     async def singme(self, ctx, player: wavelink.Player):
         logger.info("Player changing the voice channel.")
@@ -732,10 +787,20 @@ class Music(commands.Cog):
         await ctx.send(embed=emb)
 
 
-    async def bard_support(self, ctx, users: set, author: discord.User, success: bool):
+    async def bard_support(self, users: set, author_id: int, success: bool):
+        """Award points for taking part in a vote and hand out the roles.
+
+        Takes an author id rather than a Context: a vote restored after a
+        restart has no Context to speak of, only what was written to disk.
+        """
 
         filename="authors_list.json"
         Channel = self.bot.get_channel(CommandChannelID)
+        guild = self.bot.get_guild(GuildID)
+
+        if guild is None:
+            logger.warning("Guild %s unavailable - skipping the vote rewards.", GuildID)
+            return
 
         with open(filename,'r+', encoding="utf8") as file:
             # First we load existing data into a dict.
@@ -743,14 +808,14 @@ class Music(commands.Cog):
 
             for user in users:
                 id = str(user.id)
-                if id != str(author.id):
+                if id != str(author_id):
                     if id in file_data.keys():
                         file_data[id] += 0.25
                     else:
                         file_data[id] = 0.25
 
             if success:
-                id = str(author.id)
+                id = str(author_id)
                 if id in file_data.keys():
                     file_data[id] += 1
                 else:
@@ -762,12 +827,17 @@ class Music(commands.Cog):
             file.truncate(0) # need '0' when using r+
             file.write(json_object)
 
-            role1 = discord.utils.get(ctx.guild.roles, id=1054138582811549776) #Pomagier
-            role2 = discord.utils.get(ctx.guild.roles, id=1059766781889228820) #Mlodszy Bard
-            role3 = discord.utils.get(ctx.guild.roles, id=1059766769524424714) #Zastepca Barda
+            role1 = discord.utils.get(guild.roles, id=1054138582811549776) #Pomagier
+            role2 = discord.utils.get(guild.roles, id=1059766781889228820) #Mlodszy Bard
+            role3 = discord.utils.get(guild.roles, id=1059766769524424714) #Zastepca Barda
 
-            for user in users:
-                id = str(user.id)
+            for reacter in users:
+                id = str(reacter.id)
+                # reaction.users() yields User objects, which have no roles.
+                # Roles can only be granted to a Member of this guild.
+                user = guild.get_member(reacter.id)
+                if user is None:
+                    continue
                 if id in file_data.keys() and user.id != 1004008220437778523:
                     if file_data[id] >= 5 and file_data[id] < 20 and role1 not in user.roles:
                         await user.add_roles(role1)
@@ -782,20 +852,17 @@ class Music(commands.Cog):
                         await Channel.send("<@" + str(user.id) + ">! Czekaj... Czy Ty chcesz mnie wygryźć? Dobra, możesz być moim zastępcą, ok? <:MonkaS:882181709100097587> ")
 
         if success:
-            await Channel.send("<@" + str(author.id)+ ">, Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[str(author.id)]) + " razy!")
+            await Channel.send("<@" + str(author_id)+ ">, Twój utwór został pomyślnie dodany do mojego repertuaru. Pomogłeś mi " + str(file_data[str(author_id)]) + " razy!")
 
     async def voting(self, ctx, player: wavelink.Player, query, file: str="fantasy_list.txt"):
-        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
-        add = False
+        # Whether the accepted track goes straight into the queue is decided
+        # when the vote ends, by playlist_is_live - a vote can run for hours and
+        # cross into a different day than the one it started on.
         if file == "fantasy_list.txt":
-            if timestamp.strftime("%a") != "Fri":
-                add = True
             playlist = "FANTASY <:Up:912798893304086558><:Loot:912797849916436570>"
             embedurl='https://www.altermmo.pl/wp-content/uploads/altermmo-5-112-1.png'
             color = 0x77ff00
         elif file == "party_list.txt":
-            if timestamp.strftime("%a") == "Fri":
-                add = True
             playlist = "IMPREZA <a:RainbowPls:882184531917037608><a:RainbowPls:882184531917037608><a:RainbowPls:882184531917037608>"
             embedurl='https://www.altermmo.pl/wp-content/uploads/Drunk.png'
             color = 0xff0011
@@ -803,12 +870,6 @@ class Music(commands.Cog):
             playlist = "test"
             embedurl='https://www.altermmo.pl/wp-content/uploads/altermmo-2-112.png'
             color = 0xffffff
-
-        def _check(r, u):
-            return(
-                r.emoji in VOTES.keys()
-                and r.message.id == msg.id
-            )
 
         embed = discord.Embed(
             title="Czy chcecie dodać utwór do playlisty " + playlist + "?",
@@ -820,54 +881,163 @@ class Music(commands.Cog):
         embed.set_footer(text=f"Dodana przez {ctx.author.display_name}", icon_url=ctx.author.avatar)
         Channel = self.bot.get_channel(VoteChannelID)
         msg = await Channel.send(embed=embed)
-        cache_msg = discord.utils.get(self.bot.cached_messages, id=msg.id)
 
         for emoji in list(VOTES.keys()):
             await msg.add_reaction(emoji)
 
-        posReaction = 0
-        negReaction = 0
+        deadline = dt.datetime.now(dt.timezone.utc).timestamp() + VOTE_TIMEOUT_HOURS * 3600
+        record = {
+            "message_id": msg.id,
+            "author_id": ctx.author.id,
+            "file": file,
+            "title": query.title,
+            "uri": query.uri,
+            "playlist": playlist,
+            "expires_at": deadline,
+        }
+
+        # Persist before watching: if the bot dies a second later, the vote is
+        # still recoverable from disk.
+        self.remember_vote(record)
+
+        await self.watch_vote(record)
+
+    def remember_vote(self, record: dict) -> None:
+        records = load_pending_votes()
+        records.append(record)
+        save_pending_votes(records)
+
+    def forget_vote(self, message_id: int) -> None:
+        records = [r for r in load_pending_votes() if r["message_id"] != message_id]
+        save_pending_votes(records)
+
+    async def restore_pending_votes(self) -> None:
+        """Pick up votes that were still open when the bot last stopped.
+
+        Without this the message stayed on Discord with nobody listening: the
+        wait_for that drove a vote lived only in memory, so a restart silently
+        abandoned every vote in progress.
+        """
+
+        records = load_pending_votes()
+        if not records:
+            return
+
+        logger.info("Restoring %s pending vote(s) after a restart.", len(records))
+        for record in records:
+            self.bot.loop.create_task(self.watch_vote(record))
+
+    async def watch_vote(self, record: dict) -> None:
+        """Watch one vote message until it is decided or expires.
+
+        Counts come from re-fetching the message rather than from the message
+        cache. The cache is empty for anything posted before a restart, which
+        is exactly the case this has to survive - and it also means votes cast
+        while the bot was down are counted the moment it comes back.
+        """
+
+        channel = self.bot.get_channel(VoteChannelID)
+        if channel is None:
+            logger.warning("Vote channel %s unavailable.", VoteChannelID)
+            return
+
+        message_id = record["message_id"]
+
+        while True:
+            try:
+                message = await channel.fetch_message(message_id)
+            except discord.NotFound:
+                logger.info("Vote message %s no longer exists - dropping it.", message_id)
+                self.forget_vote(message_id)
+                return
+            except discord.HTTPException as exc:
+                logger.warning("Could not fetch vote message %s: %s", message_id, exc)
+                return
+
+            yes, no = count_votes(message)
+            logger.debug("Vote %s: %s for, %s against.", message_id, yes, no)
+
+            if yes >= votesReq or no >= votesReq:
+                await self.resolve_vote(record, message, accepted=yes >= votesReq)
+                return
+
+            remaining = record["expires_at"] - dt.datetime.now(dt.timezone.utc).timestamp()
+            if remaining <= 0:
+                logger.info("Vote %s expired.", message_id)
+                await self.delete_quietly(message)
+                self.forget_vote(message_id)
+                return
+
+            try:
+                await self.bot.wait_for(
+                    "raw_reaction_add",
+                    timeout=remaining,
+                    # raw, not the cached variant: the message may predate the
+                    # current session and would never match otherwise.
+                    check=lambda p: p.message_id == message_id and str(p.emoji) in VOTES,
+                )
+            except asyncio.TimeoutError:
+                logger.info("Vote %s timed out.", message_id)
+                try:
+                    message = await channel.fetch_message(message_id)
+                    await self.delete_quietly(message)
+                except discord.HTTPException:
+                    pass
+                self.forget_vote(message_id)
+                return
+
+    async def resolve_vote(self, record: dict, message: discord.Message, accepted: bool) -> None:
+        """Apply the outcome of a finished vote."""
+
+        emoji = "✅" if accepted else "❌"
+        voters = await collect_reacters(message, emoji)
+
+        logger.info("Vote %s decided: %s.", record["message_id"],
+                    "accepted" if accepted else "rejected")
+
+        await self.delete_quietly(message)
+        self.forget_vote(record["message_id"])
+
+        await self.bard_support(voters, record["author_id"], accepted)
+
+        if not accepted:
+            return
+
+        with open(record["file"], "a", encoding="utf8") as handle:
+            handle.write(f"\n{format_entry(record['title'], record.get('uri'))}")
+
+        Channel = self.bot.get_channel(CommandChannelID)
+        if Channel is not None:
+            await Channel.send("Utwór " + record["title"] + " dopisany do repertuaru "
+                               + record.get("playlist", "") + " <a:PepoG:936907752155021342>.")
+
+        # Only drop it into the queue if that playlist is the one on air right
+        # now - the day may well have changed while the vote was running.
+        if self.player is not None and self.playlist_is_live(record["file"]):
+            try:
+                tracks = await search_youtube(record.get("uri") or record["title"])
+                if tracks:
+                    self.player.queue.put(tracks[0])
+            except wavelink.WavelinkException as exc:
+                logger.warning("Could not queue the accepted track: %s", exc)
+
+    async def delete_quietly(self, message: discord.Message) -> None:
         try:
-            while (posReaction < votesReq and negReaction < votesReq):
-                    reaction, _ = await self.bot.wait_for("reaction_add", timeout=60*60*12, check=_check)
-                    posReaction = cache_msg.reactions[0].count
-                    negReaction = cache_msg.reactions[1].count
-                    logger.debug("Reactions: %s %s", posReaction, negReaction)
+            await message.delete()
+        except discord.HTTPException as exc:
+            logger.debug("Could not delete message %s: %s", message.id, exc)
 
-            if posReaction >= votesReq:
-                logger.info("Positive reactions won.")
-                reactions = cache_msg.reactions[0]
-                reacters = set()
-                logger.debug("Reactions: %s", reactions)
-                async for user in reactions.users():
-                    reacters.add(user)
-                logger.debug("Voters: %s", reacters)
-                await msg.delete()
-                await self.bard_support(ctx, reacters, ctx.author, True)
+    def playlist_is_live(self, file: str) -> bool:
+        """Whether this playlist is the one the radio is playing right now."""
 
-                # Store the URL alongside the title, so this exact video comes
-                # back on every restart rather than the top search hit.
-                with open(file, "a", encoding="utf8") as file_object:
-                    file_object.write(f"\n{format_playlist_entry(query)}")
-                Channel = self.bot.get_channel(CommandChannelID)
-                await Channel.send("Utwór " + str(query.title) + " dopisany do repertuaru " + playlist + " <a:PepoG:936907752155021342>.")
-                if add:
-                    if query is not None:
-                        logger.debug("Player")
-                        player.queue.put(query)
-                        #await Channel.send(f"Dodano {query} do kolejki.")             
+        is_friday = (dt.datetime.utcnow() + dt.timedelta(hours=2)).strftime("%a") == "Fri"
 
-            else:
-                logger.info("Negative reactions won.")
-                reactions = cache_msg.reactions[1]
-                reacters = set()
-                async for user in reactions.users():
-                    reacters.add(user)
-                await self.bard_support(ctx, reacters, ctx.author, False)
-                await msg.delete()
+        if file == "party_list.txt":
+            return is_friday
+        if file == "fantasy_list.txt":
+            return not is_friday
 
-        except asyncio.TimeoutError:
-            await msg.delete()
+        return False
 
     @commands.command(name="fantasy")
     @commands.check(is_channel)
