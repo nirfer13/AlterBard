@@ -95,16 +95,21 @@ plugins:
         - ANDROID_VR
         - WEB
         - WEBEMBEDDED
-        # TV as the last resort: it is the only OAuth-capable client, so
-        # without it the authorisation below did nothing (Lavalink logged
-        # "OAuth has been enabled without registering any OAuth-compatible clients").
-        - TV
+        # TV belongs here only together with OAuth below - it is the only
+        # OAuth-capable client, and without a token it cannot play anything,
+        # so leaving it in would just add a failed attempt per track.
       oauth:
-        # OAuth helps once YouTube starts rejecting the bot's traffic. It needs
-        # a ONE-TIME authorisation: on startup Lavalink prints a code in the log
-        # to enter at https://www.google.com/device.
-        # NOTE: use a burner account, not your main one.
-        # After authorising, paste the refresh token into refreshToken so this
-        # does not have to be repeated on every restart.
-        enabled: true # Whether to enable OAuth for the YouTube plugin.
+        # Off on purpose. Playback works fine through the clients above, and an
+        # enabled-but-unauthorised OAuth is not harmless: the device code has to
+        # be entered at https://www.google.com/device within minutes, and once
+        # it expires the poller keeps hitting Google every 5 seconds and logging
+        # a full stack trace for "Invalid status code for oauth2 token fetch: 400"
+        # - forever, filling spring.log for no benefit.
+        #
+        # Turn this on only if YouTube starts rejecting the bot ("Sign in to
+        # confirm you're not a bot"). Then: add TV back to the client list above,
+        # authorise ONCE with a burner account - never your main one - and paste
+        # the resulting refresh token into refreshToken so a restart does not
+        # send you through the whole dance again.
+        enabled: false # Whether to enable OAuth for the YouTube plugin.
         # refreshToken: "paste the refresh token here after authorising"
