@@ -50,6 +50,15 @@ CHANNEL_NAME_FANTASY = "Scena Barda"
 CHANNEL_NAME_PARTY = "Vixapol!!!"
 CHANNEL_NAME_PARTY_SWITCH = "MORDOWNIA!!!"
 
+# The party playlist takes over on Friday afternoon and runs until Friday ends,
+# so it goes back to fantasy at midnight. Monday is 0, so Friday is 4.
+PARTY_WEEKDAY = 4
+PARTY_START_HOUR = 16
+
+# How often the scheduler checks whether it is time to switch. A minute keeps
+# the switch punctual - the old hourly check could be a full hour late.
+PLAYLIST_CHECK_SECONDS = 60
+
 # Votes in progress are kept here so a restart does not orphan them.
 PENDING_VOTES_FILE = "pending_votes.json"
 
@@ -76,6 +85,29 @@ async def search_youtube(query: str) -> wavelink.Search:
     """
 
     return await wavelink.Playable.search(query.strip("<>"), source=YT_SOURCE)
+
+def local_now() -> dt.datetime:
+    """Local wall-clock time.
+
+    The old code used utcnow() + 2 hours, which hardcodes Polish summer time
+    and is an hour off all winter. datetime.now() follows the machine's own
+    zone including its DST changes, which is what "Friday at 16:00" means.
+    """
+
+    return dt.datetime.now()
+
+def is_party_time(now: dt.datetime = None) -> bool:
+    """Whether the party playlist should be on air at this moment."""
+
+    now = now or local_now()
+
+    return now.weekday() == PARTY_WEEKDAY and now.hour >= PARTY_START_HOUR
+
+def read_playlist_lines(file: str) -> list:
+    """Read a playlist file, dropping blank lines."""
+
+    with open(file, encoding="utf8") as handle:
+        return [line for line in handle.read().splitlines() if line.strip()]
 
 def _is_url(value: str) -> bool:
     return value.startswith(("http://", "https://"))
@@ -451,59 +483,99 @@ class Music(commands.Cog):
 
         await self.player.add_singletrack(await search_youtube(title))
 
-    #Check timestamp task
-    async def msg1(self, player: wavelink.Player, party_list: list, fantasy_list: list):
-        logger.debug("Loop check 1.")
-        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
-        actDay = timestamp.strftime("%a")
-        logger.info("Actual day: %s", actDay)
+    async def playlist_scheduler(self):
+        """Swap between the fantasy and party playlists on schedule.
+
+        This runs as a detached task, so an unhandled exception would end the
+        switching for good - and silently, because nothing awaits it. Every
+        iteration is therefore guarded: a failed switch is logged and retried
+        on the next tick instead of killing the schedule until a restart.
+        """
+
+        party_on = is_party_time()
+        logger.info("Playlist scheduler running. Party playlist on air: %s.", party_on)
 
         while True:
-            logger.debug("Inside infinite loop.")
+            await asyncio.sleep(PLAYLIST_CHECK_SECONDS)
 
-            timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
-            logger.debug("Current time: %s", timestamp.strftime("%H:%M"))
-            if timestamp.strftime("%a") == "Fri" and actDay != "Fri":
-                actDay = "Fri"
+            try:
+                should_party = is_party_time()
+                if should_party == party_on:
+                    continue
 
-                LogChannel = self.bot.get_channel(LogChannelID)
-                VoiceChannel = self.bot.get_channel(VoiceChannelID)
-                AnnouceChannel = self.bot.get_channel(AnnouceChannelID)
-                await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY_SWITCH)
-                await LogChannel.send("Zmiana playlisty na imprezową.")
-                await AnnouceChannel.send("HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#" + str(VoiceChannelID) + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
-                guild = self.bot.get_guild(GuildID)
-                userBot = guild.get_member(BardID)
-                await userBot.edit(nick="DJ Stachu")
+                logger.info("Switching to the %s playlist.",
+                            "party" if should_party else "fantasy")
+                await self.switch_playlist(to_party=should_party)
+                party_on = should_party
+            except Exception:
+                # party_on is deliberately left untouched, so the switch is
+                # attempted again on the next tick.
+                logger.exception("Playlist switch failed, retrying in %s s.",
+                                 PLAYLIST_CHECK_SECONDS)
 
-                list = party_list
-                random.shuffle(list)
-                await player.stop()
-                player.queue.reset()
+    async def switch_playlist(self, to_party: bool):
+        """Put the other playlist on air."""
 
-                await self.load_playlist(list, VoiceChannel)
+        LogChannel = self.bot.get_channel(LogChannelID)
+        VoiceChannel = self.bot.get_channel(VoiceChannelID)
+        guild = self.bot.get_guild(GuildID)
 
-            elif (timestamp.strftime("%a") != "Fri" and actDay == "Fri"):
-                
-                actDay = timestamp.strftime("%a")
+        file = "party_list.txt" if to_party else "fantasy_list.txt"
 
-                LogChannel = self.bot.get_channel(LogChannelID)
-                VoiceChannel = self.bot.get_channel(VoiceChannelID)
-                await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY)
-                await LogChannel.send("Zmiana playlisty na fantasy.")
-                guild = self.bot.get_guild(GuildID)
-                userBot = guild.get_member(BardID)
-                await userBot.edit(nick="Bard Stasiek")
+        # Re-read from disk rather than reuse the lists loaded at startup:
+        # anything voted in during the week would otherwise be missing until
+        # the next restart.
+        entries = read_playlist_lines(file)
+        random.shuffle(entries)
 
-                list = fantasy_list
-                await player.stop()
-                player.queue.reset()
-                random.shuffle(list)
+        await self.set_channel_look(
+            VoiceChannel,
+            CHANNEL_NAME_PARTY_SWITCH if to_party else CHANNEL_NAME_FANTASY)
+        await self.set_bot_nick(guild, "DJ Stachu" if to_party else "Bard Stasiek")
+        await self.announce(
+            LogChannel,
+            "Zmiana playlisty na imprezową." if to_party else "Zmiana playlisty na fantasy.")
 
-                await self.load_playlist(list, VoiceChannel)
+        if to_party:
+            await self.announce(
+                self.bot.get_channel(AnnouceChannelID),
+                "HALO, HALO! TUTAJ DJ STACHU! JESTEŚCIE GOTOWI? Zapraszam na <#"
+                + str(VoiceChannelID)
+                + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
 
-            logger.debug("Loop check 2.")
-            await asyncio.sleep(3600)
+        await self.player.stop()
+        self.player.queue.reset()
+        await self.load_playlist(entries, VoiceChannel)
+
+    async def announce(self, channel, message: str):
+        """Send a message, treating a missing channel as a warning not a crash.
+
+        A None channel here used to take the whole scheduler down with an
+        AttributeError, and with it every future playlist switch.
+        """
+
+        if channel is None:
+            logger.warning("Channel unavailable, message not sent: %s", message)
+            return
+
+        try:
+            await channel.send(message)
+        except discord.HTTPException as exc:
+            logger.warning("Could not send a message: %s", exc)
+
+    async def set_bot_nick(self, guild, nick: str):
+        """Rename the bot on the server, tolerating a cache miss."""
+
+        member = guild.get_member(BardID) if guild is not None else None
+
+        if member is None:
+            logger.warning("Bot member %s not in cache, nickname unchanged.", BardID)
+            return
+
+        try:
+            await member.edit(nick=nick)
+        except discord.HTTPException as exc:
+            logger.warning("Could not change the nickname: %s", exc)
 
     async def setup_hook(self) -> None:
         # Wavelink 2.0 has made connecting Nodes easier... Simply create each Node
@@ -519,49 +591,47 @@ class Music(commands.Cog):
         voice_channel = self.bot.get_channel(VoiceChannelID)
         logger.info("Channel acquired.")
 
-        #Create Fantasy Playlist
-        with open('fantasy_list.txt', encoding="utf8") as f:
-            fantasy_list = f.read().splitlines()
-
-        #Create Party Playlist
-        with open('party_list.txt', encoding="utf8") as g:
-            party_list = g.read().splitlines()
-
         LogChannel = self.bot.get_channel(LogChannelID)
         VoiceChannel: discord.VoiceChannel = self.bot.get_channel(VoiceChannelID)
         guild = self.bot.get_guild(GuildID)
-        userBot = guild.get_member(BardID)
 
-        timestamp = (dt.datetime.utcnow() + dt.timedelta(hours=2))
-        if timestamp.strftime("%a") == "Fri":
-            list = party_list
+        # The same rule the scheduler uses. Judging by the weekday alone meant
+        # a restart on Friday morning already put the party playlist on air,
+        # hours before it was due.
+        party_on = is_party_time()
+
+        if party_on:
+            entries = read_playlist_lines("party_list.txt")
             await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY)
-            await LogChannel.send("Zmiana playlisty na imprezową.")
-            await userBot.edit(nick="DJ Stachu")
+            await self.announce(LogChannel, "Zmiana playlisty na imprezową.")
+            await self.set_bot_nick(guild, "DJ Stachu")
         else:
-            list = fantasy_list
+            entries = read_playlist_lines("fantasy_list.txt")
             await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY)
-            await LogChannel.send("Zmiana playlisty na fantasy.")
-            await userBot.edit(nick="Bard Stasiek")
+            await self.announce(LogChannel, "Zmiana playlisty na fantasy.")
+            await self.set_bot_nick(guild, "Bard Stasiek")
 
-        random.shuffle(list)
+        random.shuffle(entries)
 
-        await LogChannel.send("Bard gotowy do śpiewania!")
+        await self.announce(LogChannel, "Bard gotowy do śpiewania!")
         self.player = Player(bot=self.bot)
         vc: Player = await VoiceChannel.connect(cls=self.player)
 
-        added, skipped = await self.load_playlist(list, VoiceChannel)
-        await LogChannel.send(f"Załadowano {added} utworów z YouTube, pominięto {len(skipped)}.")
+        added, skipped = await self.load_playlist(entries, VoiceChannel)
+        await self.announce(
+            LogChannel,
+            f"Załadowano {added} utworów z YouTube, pominięto {len(skipped)}.")
 
         if not added:
-            await LogChannel.send(
+            await self.announce(
+                LogChannel,
                 "Nie udało się załadować **żadnego** utworu z YouTube. "
                 "Sprawdź logi Lavalinka - najczęściej oznacza to przeterminowany "
-                "youtube-plugin albo brak autoryzacji OAuth."
+                "youtube-plugin."
             )
 
-        # Check timestamp and start task
-        self.task = self.bot.loop.create_task(self.msg1(self.player, party_list, fantasy_list))
+        # Watches the clock and swaps the playlist at the scheduled time.
+        self.task = self.bot.loop.create_task(self.playlist_scheduler())
 
     @commands.command("play")
     async def play(self, ctx: commands.Context, *, search: str) -> None:
@@ -1064,12 +1134,10 @@ class Music(commands.Cog):
     def playlist_is_live(self, file: str) -> bool:
         """Whether this playlist is the one the radio is playing right now."""
 
-        is_friday = (dt.datetime.utcnow() + dt.timedelta(hours=2)).strftime("%a") == "Fri"
-
         if file == "party_list.txt":
-            return is_friday
+            return is_party_time()
         if file == "fantasy_list.txt":
-            return not is_friday
+            return not is_party_time()
 
         return False
 
