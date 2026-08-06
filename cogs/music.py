@@ -907,7 +907,11 @@ class Music(commands.Cog):
             color=color,
             timestamp=dt.datetime.utcnow()
         )
-        embed.set_image(url=query.thumb)
+        # artwork, not thumb: wavelink renamed it in 3.0, and the old name
+        # raised AttributeError here - which killed $fantasy and $party right
+        # before the vote was posted, so nothing ever appeared on the channel.
+        # It can still be None, hence the per-playlist image as a fallback.
+        embed.set_image(url=query.artwork or embedurl)
         embed.set_footer(text=f"Dodana przez {ctx.author.display_name}", icon_url=ctx.author.avatar)
         Channel = self.bot.get_channel(VoteChannelID)
         msg = await Channel.send(embed=embed)
