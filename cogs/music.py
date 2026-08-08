@@ -67,8 +67,10 @@ PLAYLIST_CHECK_SECONDS = 60
 # Votes in progress are kept here so a restart does not orphan them.
 PENDING_VOTES_FILE = "pending_votes.json"
 
-# How long a vote stays open before it is dropped.
-VOTE_TIMEOUT_HOURS = 12
+# How long a vote stays open before it is dropped. Twelve hours turned out to be
+# too short to gather votesReq votes, so proposals kept expiring unanswered.
+# The deadline is absolute, so this only affects votes started from now on.
+VOTE_TIMEOUT_HOURS = 48
 
 OPTIONS = {
     "1️⃣": 0,
