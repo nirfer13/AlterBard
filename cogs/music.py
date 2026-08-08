@@ -43,6 +43,11 @@ FAILURE_THRESHOLD = 3
 # How long to keep the radio silent after a detected YouTube outage.
 FAILURE_COOLDOWN = 120
 
+# Lavalink reports frame statistics roughly once a minute. This many reports in
+# a row with zero frames sent, while a track is supposedly playing, means the
+# audio is going nowhere and the voice connection needs rebuilding.
+SILENT_STATS_LIMIT = 3
+
 # Names the bot gives its voice channel. Setting a topic as well was dropped:
 # this server's blocked-word filter refused every variant tried, so the feature
 # only produced warnings.
@@ -383,6 +388,8 @@ class Music(commands.Cog):
         self._recovery_lock = asyncio.Lock()
         # on_ready runs again on every reconnect; startup must only run once.
         self._votes_restored = False
+        # Consecutive Lavalink stat reports with no audio frames sent.
+        self._silent_stats = 0
     # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -672,7 +679,10 @@ class Music(commands.Cog):
             activity = discord.CustomActivity(f"Odgrywa: {payload.track.title}")
             await self.bot.change_presence(status=discord.Status.do_not_disturb,
                                         activity=activity)
-        except discord.HTTPException as exc:
+        except (discord.DiscordException, ConnectionError) as exc:
+            # Not just HTTPException: while the gateway is reconnecting this
+            # raises ConnectionResetError, which used to escape the handler and
+            # be reported as an unhandled error on every such reconnect.
             logger.warning("Could not set the presence: %s", exc)
 
     @commands.Cog.listener()
@@ -694,6 +704,79 @@ class Music(commands.Cog):
         if not self.player.playing and not self._recovery_lock.locked():
             logger.warning("Autoplay did not move on - restarting the radio manually.")
             await self.player.start_playback()
+
+    @commands.Cog.listener()
+    async def on_wavelink_websocket_closed(self, payload: wavelink.WebsocketClosedEventPayload):
+        """Discord closed the voice websocket.
+
+        This is the failure that leaves the bot sitting in the channel in
+        silence: Lavalink keeps decoding and the queue keeps advancing, so the
+        log looks perfectly healthy, but the audio has nowhere to go. Nothing
+        listened for this event before, so the radio stayed mute until somebody
+        noticed by ear and restarted it.
+        """
+
+        logger.warning("Voice websocket closed: %s (reason: %s, by remote: %s).",
+                       payload.code, payload.reason, payload.by_remote)
+
+        if self.is_radio_player(payload.player):
+            await self.reconnect_voice()
+
+    @commands.Cog.listener()
+    async def on_wavelink_stats_update(self, payload: wavelink.StatsEventPayload):
+        """Catch a player that reports playing while sending no audio.
+
+        The websocket-closed event covers the case Discord tells us about. This
+        is the safety net for silence it does not announce.
+        """
+
+        if self.player is None or not self.player.playing:
+            self._silent_stats = 0
+            return
+
+        # frames is None when Lavalink has nothing to report, which is not the
+        # same as reporting zero - only an explicit zero counts as silence.
+        if payload.frames is None or payload.frames.sent > 0:
+            self._silent_stats = 0
+            return
+
+        self._silent_stats += 1
+        logger.warning("A track is playing but no audio frames were sent (%s/%s).",
+                       self._silent_stats, SILENT_STATS_LIMIT)
+
+        if self._silent_stats >= SILENT_STATS_LIMIT:
+            self._silent_stats = 0
+            logger.error("The radio has gone silent - rebuilding the voice connection.")
+            await self.reconnect_voice()
+
+    async def reconnect_voice(self):
+        """Rebuild the voice connection while keeping the queue intact."""
+
+        if self._recovery_lock.locked():
+            return
+
+        async with self._recovery_lock:
+            channel = self.bot.get_channel(VoiceChannelID)
+            if channel is None or self.player is None:
+                logger.warning("Cannot reconnect: no channel or no player.")
+                return
+
+            logger.info("Reconnecting to %s.", channel)
+
+            try:
+                # Moving to the same channel makes Discord hand out a fresh
+                # voice session, which wavelink forwards to Lavalink. The player
+                # and its queue survive - a disconnect/connect cycle would
+                # destroy the player and lose everything queued.
+                await self.player.move_to(channel)
+            except (discord.HTTPException, wavelink.WavelinkException) as exc:
+                logger.warning("Voice reconnect failed: %s", exc)
+                return
+
+            await asyncio.sleep(5)
+
+            if not self.player.playing:
+                await self.player.start_playback()
 
     def is_radio_player(self, player) -> bool:
         """Whether the event belongs to the radio player, not a one-off $play one."""
