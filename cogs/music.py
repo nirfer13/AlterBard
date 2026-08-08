@@ -48,6 +48,10 @@ FAILURE_COOLDOWN = 120
 # audio is going nowhere and the voice connection needs rebuilding.
 SILENT_STATS_LIMIT = 3
 
+# How long to let a closed voice websocket sort itself out before stepping in.
+# Moving between channels closes it too, and that resolves within a second.
+VOICE_GRACE_SECONDS = 15
+
 # Names the bot gives its voice channel. Setting a topic as well was dropped:
 # this server's blocked-word filter refused every variant tried, so the feature
 # only produced warnings.
@@ -736,7 +740,29 @@ class Music(commands.Cog):
                        payload.code, payload.reason, payload.by_remote)
 
         if self.is_radio_player(payload.player):
-            await self.reconnect_voice()
+            await self.recover_if_still_broken()
+
+    async def recover_if_still_broken(self):
+        """Reconnect, but only if the connection does not come back by itself.
+
+        Moving the player closes the voice websocket too, and Discord reports
+        it with the same codes as a real failure. Reconnecting on sight of one
+        therefore dragged the bot straight back off any channel $zagrajmi had
+        just sent it to - and each forced move closed the socket again, so it
+        looped. Waiting first lets a deliberate move settle.
+        """
+
+        if self._recovery_lock.locked():
+            return
+
+        async with self._recovery_lock:
+            await asyncio.sleep(VOICE_GRACE_SECONDS)
+
+            if self.player is not None and self.player.connected and self.player.playing:
+                logger.info("Voice connection came back on its own.")
+                return
+
+            await self.rebuild_voice()
 
     @commands.Cog.listener()
     async def on_wavelink_stats_update(self, payload: wavelink.StatsEventPayload):
@@ -766,33 +792,49 @@ class Music(commands.Cog):
             await self.reconnect_voice()
 
     async def reconnect_voice(self):
-        """Rebuild the voice connection while keeping the queue intact."""
+        """Rebuild the voice connection, taking the recovery lock first."""
 
         if self._recovery_lock.locked():
             return
 
         async with self._recovery_lock:
-            channel = self.bot.get_channel(VoiceChannelID)
-            if channel is None or self.player is None:
-                logger.warning("Cannot reconnect: no channel or no player.")
-                return
+            await self.rebuild_voice()
 
-            logger.info("Reconnecting to %s.", channel)
+    async def rebuild_voice(self):
+        """Re-establish the voice connection while keeping the queue intact.
 
-            try:
-                # Moving to the same channel makes Discord hand out a fresh
-                # voice session, which wavelink forwards to Lavalink. The player
-                # and its queue survive - a disconnect/connect cycle would
-                # destroy the player and lose everything queued.
-                await self.player.move_to(channel)
-            except (discord.HTTPException, wavelink.WavelinkException) as exc:
-                logger.warning("Voice reconnect failed: %s", exc)
-                return
+        Call with the recovery lock held.
+        """
 
-            await asyncio.sleep(5)
+        if self.player is None:
+            logger.warning("Cannot reconnect: there is no player.")
+            return
 
-            if not self.player.playing:
-                await self.player.start_playback()
+        # Reconnect where the player actually is, not where the radio normally
+        # lives. Hardcoding the home channel here is what hauled the bot back
+        # from wherever $zagrajmi had summoned it.
+        channel = self.player.channel or self.bot.get_channel(VoiceChannelID)
+
+        if not channel:
+            logger.warning("Cannot reconnect: no channel to return to.")
+            return
+
+        logger.info("Reconnecting to %s.", channel)
+
+        try:
+            # Moving to the same channel makes Discord hand out a fresh voice
+            # session, which wavelink forwards to Lavalink. The player and its
+            # queue survive - a disconnect/connect cycle would destroy the
+            # player and lose everything queued.
+            await self.player.move_to(channel)
+        except (discord.HTTPException, wavelink.WavelinkException) as exc:
+            logger.warning("Voice reconnect failed: %s", exc)
+            return
+
+        await asyncio.sleep(5)
+
+        if not self.player.playing:
+            await self.player.start_playback()
 
     def is_radio_player(self, player) -> bool:
         """Whether the event belongs to the radio player, not a one-off $play one."""
