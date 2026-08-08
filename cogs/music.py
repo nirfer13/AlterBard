@@ -43,6 +43,11 @@ FAILURE_THRESHOLD = 3
 # How long to keep the radio silent after a detected YouTube outage.
 FAILURE_COOLDOWN = 120
 
+# Lavalink reports frame statistics roughly once a minute. This many reports in
+# a row with zero frames sent, while a track is supposedly playing, means the
+# audio is going nowhere and the voice connection needs rebuilding.
+SILENT_STATS_LIMIT = 3
+
 # Names the bot gives its voice channel. Setting a topic as well was dropped:
 # this server's blocked-word filter refused every variant tried, so the feature
 # only produced warnings.
@@ -62,8 +67,10 @@ PLAYLIST_CHECK_SECONDS = 60
 # Votes in progress are kept here so a restart does not orphan them.
 PENDING_VOTES_FILE = "pending_votes.json"
 
-# How long a vote stays open before it is dropped.
-VOTE_TIMEOUT_HOURS = 12
+# How long a vote stays open before it is dropped. Twelve hours turned out to be
+# too short to gather votesReq votes, so proposals kept expiring unanswered.
+# The deadline is absolute, so this only affects votes started from now on.
+VOTE_TIMEOUT_HOURS = 48
 
 OPTIONS = {
     "1️⃣": 0,
@@ -323,11 +330,22 @@ class Player(wavelink.Player):
             await LogChannel.send("Nie znaleziono track.")
             raise NoTracksFound
 
-        if len(tracks) == 1:
-            return tracks[0]
-        else:
-            if (track := await self.choose_track(ctx, tracks, file)) is not None:
-                return track
+        # Drop the over-long results before anything is offered. Showing a
+        # track only to refuse it once it has been picked wastes the chooser's
+        # time; the threshold matches check_track's exactly, so nothing that
+        # survives this filter can be rejected for length later on.
+        allowed = [t for t in tracks if t.length / 60 / 1000 <= MAX_TRACK_MINUTES]
+
+        if not allowed:
+            await ctx.send("<@" + str(ctx.author.id) + ">, wszystkie znalezione wersje "
+                           f"są dłuższe niż {MAX_TRACK_MINUTES} minut. Spróbuj czegoś innego.")
+            raise LongTrack
+
+        if len(allowed) == 1:
+            return allowed[0]
+
+        if (track := await self.choose_track(ctx, allowed, file)) is not None:
+            return track
 
     async def choose_track(self, ctx, tracks, file: str="fantasy_list.txt"):
         """Choose one track when multiple were found."""
@@ -342,7 +360,10 @@ class Player(wavelink.Player):
             title="Znaleziono kilka odpowiadających propozycji. Wybierz jedną.",
             description=(
                 "\n".join(
-                    f"**{i+1}.** {t.title} ({t.length//60000}:{str(t.length%60).zfill(2)})"
+                    # length is in milliseconds, so the seconds are (ms // 1000) % 60.
+                    # Taking ms % 60 showed a number with no relation to the
+                    # real duration - the one thing this list exists to convey.
+                    f"**{i+1}.** {t.title} ({t.length//60000}:{(t.length//1000)%60:02d})"
                     for i, t in enumerate(tracks[:5])
                 )
             ),
@@ -383,6 +404,8 @@ class Music(commands.Cog):
         self._recovery_lock = asyncio.Lock()
         # on_ready runs again on every reconnect; startup must only run once.
         self._votes_restored = False
+        # Consecutive Lavalink stat reports with no audio frames sent.
+        self._silent_stats = 0
     # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -672,7 +695,10 @@ class Music(commands.Cog):
             activity = discord.CustomActivity(f"Odgrywa: {payload.track.title}")
             await self.bot.change_presence(status=discord.Status.do_not_disturb,
                                         activity=activity)
-        except discord.HTTPException as exc:
+        except (discord.DiscordException, ConnectionError) as exc:
+            # Not just HTTPException: while the gateway is reconnecting this
+            # raises ConnectionResetError, which used to escape the handler and
+            # be reported as an unhandled error on every such reconnect.
             logger.warning("Could not set the presence: %s", exc)
 
     @commands.Cog.listener()
@@ -694,6 +720,79 @@ class Music(commands.Cog):
         if not self.player.playing and not self._recovery_lock.locked():
             logger.warning("Autoplay did not move on - restarting the radio manually.")
             await self.player.start_playback()
+
+    @commands.Cog.listener()
+    async def on_wavelink_websocket_closed(self, payload: wavelink.WebsocketClosedEventPayload):
+        """Discord closed the voice websocket.
+
+        This is the failure that leaves the bot sitting in the channel in
+        silence: Lavalink keeps decoding and the queue keeps advancing, so the
+        log looks perfectly healthy, but the audio has nowhere to go. Nothing
+        listened for this event before, so the radio stayed mute until somebody
+        noticed by ear and restarted it.
+        """
+
+        logger.warning("Voice websocket closed: %s (reason: %s, by remote: %s).",
+                       payload.code, payload.reason, payload.by_remote)
+
+        if self.is_radio_player(payload.player):
+            await self.reconnect_voice()
+
+    @commands.Cog.listener()
+    async def on_wavelink_stats_update(self, payload: wavelink.StatsEventPayload):
+        """Catch a player that reports playing while sending no audio.
+
+        The websocket-closed event covers the case Discord tells us about. This
+        is the safety net for silence it does not announce.
+        """
+
+        if self.player is None or not self.player.playing:
+            self._silent_stats = 0
+            return
+
+        # frames is None when Lavalink has nothing to report, which is not the
+        # same as reporting zero - only an explicit zero counts as silence.
+        if payload.frames is None or payload.frames.sent > 0:
+            self._silent_stats = 0
+            return
+
+        self._silent_stats += 1
+        logger.warning("A track is playing but no audio frames were sent (%s/%s).",
+                       self._silent_stats, SILENT_STATS_LIMIT)
+
+        if self._silent_stats >= SILENT_STATS_LIMIT:
+            self._silent_stats = 0
+            logger.error("The radio has gone silent - rebuilding the voice connection.")
+            await self.reconnect_voice()
+
+    async def reconnect_voice(self):
+        """Rebuild the voice connection while keeping the queue intact."""
+
+        if self._recovery_lock.locked():
+            return
+
+        async with self._recovery_lock:
+            channel = self.bot.get_channel(VoiceChannelID)
+            if channel is None or self.player is None:
+                logger.warning("Cannot reconnect: no channel or no player.")
+                return
+
+            logger.info("Reconnecting to %s.", channel)
+
+            try:
+                # Moving to the same channel makes Discord hand out a fresh
+                # voice session, which wavelink forwards to Lavalink. The player
+                # and its queue survive - a disconnect/connect cycle would
+                # destroy the player and lose everything queued.
+                await self.player.move_to(channel)
+            except (discord.HTTPException, wavelink.WavelinkException) as exc:
+                logger.warning("Voice reconnect failed: %s", exc)
+                return
+
+            await asyncio.sleep(5)
+
+            if not self.player.playing:
+                await self.player.start_playback()
 
     def is_radio_player(self, player) -> bool:
         """Whether the event belongs to the radio player, not a one-off $play one."""
@@ -837,7 +936,10 @@ class Music(commands.Cog):
             return None
 
         if track.length/60/1000 > MAX_TRACK_MINUTES:
-            await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
+            # The limit is interpolated rather than written out: the message
+            # used to promise 8 minutes while the code allowed 9.
+            await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! "
+                           f"Wybierz utwór krótszy niż {MAX_TRACK_MINUTES} minut.")
             raise LongTrack
 
         return track
@@ -1067,9 +1169,7 @@ class Music(commands.Cog):
 
             remaining = record["expires_at"] - dt.datetime.now(dt.timezone.utc).timestamp()
             if remaining <= 0:
-                logger.info("Vote %s expired.", message_id)
-                await self.delete_quietly(message)
-                self.forget_vote(message_id)
+                await self.expire_vote(record, channel)
                 return
 
             try:
@@ -1081,39 +1181,74 @@ class Music(commands.Cog):
                     check=lambda p: p.message_id == message_id and str(p.emoji) in VOTES,
                 )
             except asyncio.TimeoutError:
-                logger.info("Vote %s timed out.", message_id)
-                try:
-                    message = await channel.fetch_message(message_id)
-                    await self.delete_quietly(message)
-                except discord.HTTPException:
-                    pass
-                self.forget_vote(message_id)
+                await self.expire_vote(record, channel)
                 return
+
+    async def expire_vote(self, record: dict, channel) -> None:
+        """Close a vote that ran out of time, and say so.
+
+        An expiring vote used to simply vanish: the message was deleted and
+        nothing was posted anywhere, so hours after proposing a track its
+        author saw it disappear with no explanation and no result.
+        """
+
+        message_id = record["message_id"]
+        yes = no = 0
+
+        try:
+            message = await channel.fetch_message(message_id)
+            yes, no = count_votes(message)
+            await self.delete_quietly(message)
+        except discord.HTTPException as exc:
+            logger.warning("Could not read the expiring vote %s: %s", message_id, exc)
+
+        logger.info("Vote %s expired with %s for and %s against, %s needed.",
+                    message_id, yes, no, votesReq)
+
+        self.forget_vote(message_id)
+
+        await self.announce(
+            self.bot.get_channel(CommandChannelID),
+            f"<@{record['author_id']}>, głosowanie nad utworem **{record['title']}** "
+            f"wygasło po {VOTE_TIMEOUT_HOURS} godzinach. Zebrało {yes} z {votesReq} "
+            f"potrzebnych głosów na tak ({no} na nie), więc utwór nie trafił do repertuaru. "
+            "Możesz spróbować ponownie."
+        )
 
     async def resolve_vote(self, record: dict, message: discord.Message, accepted: bool) -> None:
         """Apply the outcome of a finished vote."""
 
         emoji = "✅" if accepted else "❌"
         voters = await collect_reacters(message, emoji)
+        yes, no = count_votes(message)
 
-        logger.info("Vote %s decided: %s.", record["message_id"],
-                    "accepted" if accepted else "rejected")
+        # The tally is logged at INFO, not DEBUG: without it there is no way to
+        # tell afterwards how close a vote came, and DEBUG is off in normal use.
+        logger.info("Vote %s %s with %s for and %s against.", record["message_id"],
+                    "accepted" if accepted else "rejected", yes, no)
 
         await self.delete_quietly(message)
         self.forget_vote(record["message_id"])
 
         await self.bard_support(voters, record["author_id"], accepted)
 
+        Channel = self.bot.get_channel(CommandChannelID)
+
         if not accepted:
+            # A rejected vote used to disappear as quietly as an expired one.
+            await self.announce(
+                Channel,
+                f"<@{record['author_id']}>, utwór **{record['title']}** został odrzucony "
+                f"w głosowaniu ({no} głosów na nie). Może następnym razem!")
             return
 
         with open(record["file"], "a", encoding="utf8") as handle:
             handle.write(f"\n{format_entry(record['title'], record.get('uri'))}")
 
-        Channel = self.bot.get_channel(CommandChannelID)
-        if Channel is not None:
-            await Channel.send("Utwór " + record["title"] + " dopisany do repertuaru "
-                               + record.get("playlist", "") + " <a:PepoG:936907752155021342>.")
+        await self.announce(
+            Channel,
+            "Utwór " + record["title"] + " dopisany do repertuaru "
+            + record.get("playlist", "") + " <a:PepoG:936907752155021342>.")
 
         # Only drop it into the queue if that playlist is the one on air right
         # now - the day may well have changed while the vote was running.
