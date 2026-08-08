@@ -349,7 +349,10 @@ class Player(wavelink.Player):
             title="Znaleziono kilka odpowiadających propozycji. Wybierz jedną.",
             description=(
                 "\n".join(
-                    f"**{i+1}.** {t.title} ({t.length//60000}:{str(t.length%60).zfill(2)})"
+                    # length is in milliseconds, so the seconds are (ms // 1000) % 60.
+                    # Taking ms % 60 showed a number with no relation to the
+                    # real duration - the one thing this list exists to convey.
+                    f"**{i+1}.** {t.title} ({t.length//60000}:{(t.length//1000)%60:02d})"
                     for i, t in enumerate(tracks[:5])
                 )
             ),
@@ -922,7 +925,10 @@ class Music(commands.Cog):
             return None
 
         if track.length/60/1000 > MAX_TRACK_MINUTES:
-            await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! Wybierz utwór krótszy niż 8 minut.")
+            # The limit is interpolated rather than written out: the message
+            # used to promise 8 minutes while the code allowed 9.
+            await ctx.send("<@" + str(ctx.author.id) + ">, utwór jest za długi! "
+                           f"Wybierz utwór krótszy niż {MAX_TRACK_MINUTES} minut.")
             raise LongTrack
 
         return track
