@@ -230,19 +230,43 @@ async def collect_reacters(message: discord.Message, emoji: str) -> set:
 
     return voters
 
-def read_playlist_titles(file: str) -> list:
-    """Return only the titles from a playlist file, ignoring any stored URLs.
+def read_playlist_entries(file: str) -> list:
+    """Return every (title, url) pair from a playlist file."""
 
-    Duplicate detection compares titles, so it has to look past the URL half
-    of an entry.
+    return [parse_playlist_entry(line) for line in read_playlist_lines(file)]
+
+def read_playlist_titles(file: str) -> list:
+    """Return only the titles from a playlist file, ignoring any stored URLs."""
+
+    return [title for title, _ in read_playlist_entries(file)]
+
+def normalize_title(title: str) -> str:
+    """Fold a title down to what should count as "the same track".
+
+    Case and stray spacing are the difference between "Akcent - Kylie" and
+    "akcent  -  kylie", which are plainly the same proposal.
     """
 
-    with open(file, "r", encoding="utf8") as handle:
-        return [
-            parse_playlist_entry(line)[0]
-            for line in handle.read().splitlines()
-            if line.strip()
-        ]
+    return " ".join(title.split()).casefold()
+
+def find_duplicate(file: str, title: str, uri: str = None):
+    """Return the existing entry matching this track, or None.
+
+    The URL is checked first and is decisive: the same video is the same track
+    no matter how the uploader spelled the title. Titles are only compared
+    after normalising, and a different upload of the same song still slips
+    through - that is what the vote is for.
+    """
+
+    wanted_title = normalize_title(title)
+
+    for entry_title, entry_uri in read_playlist_entries(file):
+        if uri and entry_uri and uri == entry_uri:
+            return entry_title, entry_uri
+        if normalize_title(entry_title) == wanted_title:
+            return entry_title, entry_uri
+
+    return None
 
 class AlreadyConnectedToChannel(commands.CommandError):
     pass
@@ -388,14 +412,11 @@ class Player(wavelink.Player):
             await msg.delete()
         else:
             await msg.delete()
-            lines = read_playlist_titles(file)
-
-            if tracks[OPTIONS[reaction.emoji]].title in lines:
-                await ctx.send("<@" + str(ctx.author.id) + ">, " +
-                               "mam już taki utwór w repertuarze, więc musisz wybrać coś innego.")
-                raise DuplicatedTrack
-            else:
-                return tracks[OPTIONS[reaction.emoji]]
+            # The duplicate check used to live here, which meant it only ran
+            # when there was something to choose from - a search returning a
+            # single result skipped it entirely. check_track does it now, on
+            # every path.
+            return tracks[OPTIONS[reaction.emoji]]
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -956,9 +977,9 @@ class Music(commands.Cog):
         # and they would otherwise end up inside the search query.
         query = query.strip().strip('"').strip("'").strip()
 
-        lines = read_playlist_titles(file)
-
-        if query in lines:
+        # Cheap pre-check on what was typed, so an obvious repeat is refused
+        # before bothering YouTube. The real check runs on the chosen track.
+        if find_duplicate(file, query):
             await ctx.send("<@" + str(ctx.author.id) + ">, mam już taki utwór w repertuarze, więc musisz wybrać coś innego.")
             raise DuplicatedTrack
 
@@ -981,6 +1002,16 @@ class Music(commands.Cog):
 
         if track is None:
             return None
+
+        # Now that an actual track is in hand, check it against the playlist by
+        # URL as well as title. This runs whichever way the track was picked -
+        # the old check sat inside the chooser and never saw a search that
+        # returned a single result.
+        existing = find_duplicate(file, track.title, track.uri)
+        if existing:
+            await ctx.send("<@" + str(ctx.author.id) + ">, ten utwór już jest w moim "
+                           f"repertuarze jako **{existing[0]}**. Wybierz coś innego.")
+            raise DuplicatedTrack
 
         if track.length/60/1000 > MAX_TRACK_MINUTES:
             # The limit is interpolated rather than written out: the message
