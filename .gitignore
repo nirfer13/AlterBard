@@ -4,9 +4,10 @@ nohup.out
 .venv
 *.pyc
 
-# Runtime logs - the bot's own file plus Lavalink's rotated output.
-logs/bot.log*
-logs/spring.log.*.gz
+# Runtime logs, the bot's own and Lavalink's. They are machine-local output:
+# versioning them added thousands of lines per commit and told nobody anything
+# that the file on the machine does not already say.
+logs/
 
 # Votes still in progress - runtime state, meaningless on another machine.
 pending_votes.json
