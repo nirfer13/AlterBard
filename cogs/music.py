@@ -1150,9 +1150,7 @@ class Music(commands.Cog):
 
             remaining = record["expires_at"] - dt.datetime.now(dt.timezone.utc).timestamp()
             if remaining <= 0:
-                logger.info("Vote %s expired.", message_id)
-                await self.delete_quietly(message)
-                self.forget_vote(message_id)
+                await self.expire_vote(record, channel)
                 return
 
             try:
@@ -1164,39 +1162,74 @@ class Music(commands.Cog):
                     check=lambda p: p.message_id == message_id and str(p.emoji) in VOTES,
                 )
             except asyncio.TimeoutError:
-                logger.info("Vote %s timed out.", message_id)
-                try:
-                    message = await channel.fetch_message(message_id)
-                    await self.delete_quietly(message)
-                except discord.HTTPException:
-                    pass
-                self.forget_vote(message_id)
+                await self.expire_vote(record, channel)
                 return
+
+    async def expire_vote(self, record: dict, channel) -> None:
+        """Close a vote that ran out of time, and say so.
+
+        An expiring vote used to simply vanish: the message was deleted and
+        nothing was posted anywhere, so hours after proposing a track its
+        author saw it disappear with no explanation and no result.
+        """
+
+        message_id = record["message_id"]
+        yes = no = 0
+
+        try:
+            message = await channel.fetch_message(message_id)
+            yes, no = count_votes(message)
+            await self.delete_quietly(message)
+        except discord.HTTPException as exc:
+            logger.warning("Could not read the expiring vote %s: %s", message_id, exc)
+
+        logger.info("Vote %s expired with %s for and %s against, %s needed.",
+                    message_id, yes, no, votesReq)
+
+        self.forget_vote(message_id)
+
+        await self.announce(
+            self.bot.get_channel(CommandChannelID),
+            f"<@{record['author_id']}>, głosowanie nad utworem **{record['title']}** "
+            f"wygasło po {VOTE_TIMEOUT_HOURS} godzinach. Zebrało {yes} z {votesReq} "
+            f"potrzebnych głosów na tak ({no} na nie), więc utwór nie trafił do repertuaru. "
+            "Możesz spróbować ponownie."
+        )
 
     async def resolve_vote(self, record: dict, message: discord.Message, accepted: bool) -> None:
         """Apply the outcome of a finished vote."""
 
         emoji = "✅" if accepted else "❌"
         voters = await collect_reacters(message, emoji)
+        yes, no = count_votes(message)
 
-        logger.info("Vote %s decided: %s.", record["message_id"],
-                    "accepted" if accepted else "rejected")
+        # The tally is logged at INFO, not DEBUG: without it there is no way to
+        # tell afterwards how close a vote came, and DEBUG is off in normal use.
+        logger.info("Vote %s %s with %s for and %s against.", record["message_id"],
+                    "accepted" if accepted else "rejected", yes, no)
 
         await self.delete_quietly(message)
         self.forget_vote(record["message_id"])
 
         await self.bard_support(voters, record["author_id"], accepted)
 
+        Channel = self.bot.get_channel(CommandChannelID)
+
         if not accepted:
+            # A rejected vote used to disappear as quietly as an expired one.
+            await self.announce(
+                Channel,
+                f"<@{record['author_id']}>, utwór **{record['title']}** został odrzucony "
+                f"w głosowaniu ({no} głosów na nie). Może następnym razem!")
             return
 
         with open(record["file"], "a", encoding="utf8") as handle:
             handle.write(f"\n{format_entry(record['title'], record.get('uri'))}")
 
-        Channel = self.bot.get_channel(CommandChannelID)
-        if Channel is not None:
-            await Channel.send("Utwór " + record["title"] + " dopisany do repertuaru "
-                               + record.get("playlist", "") + " <a:PepoG:936907752155021342>.")
+        await self.announce(
+            Channel,
+            "Utwór " + record["title"] + " dopisany do repertuaru "
+            + record.get("playlist", "") + " <a:PepoG:936907752155021342>.")
 
         # Only drop it into the queue if that playlist is the one on air right
         # now - the day may well have changed while the vote was running.
