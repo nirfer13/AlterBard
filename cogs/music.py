@@ -330,11 +330,22 @@ class Player(wavelink.Player):
             await LogChannel.send("Nie znaleziono track.")
             raise NoTracksFound
 
-        if len(tracks) == 1:
-            return tracks[0]
-        else:
-            if (track := await self.choose_track(ctx, tracks, file)) is not None:
-                return track
+        # Drop the over-long results before anything is offered. Showing a
+        # track only to refuse it once it has been picked wastes the chooser's
+        # time; the threshold matches check_track's exactly, so nothing that
+        # survives this filter can be rejected for length later on.
+        allowed = [t for t in tracks if t.length / 60 / 1000 <= MAX_TRACK_MINUTES]
+
+        if not allowed:
+            await ctx.send("<@" + str(ctx.author.id) + ">, wszystkie znalezione wersje "
+                           f"są dłuższe niż {MAX_TRACK_MINUTES} minut. Spróbuj czegoś innego.")
+            raise LongTrack
+
+        if len(allowed) == 1:
+            return allowed[0]
+
+        if (track := await self.choose_track(ctx, allowed, file)) is not None:
+            return track
 
     async def choose_track(self, ctx, tracks, file: str="fantasy_list.txt"):
         """Choose one track when multiple were found."""
