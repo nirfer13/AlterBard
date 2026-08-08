@@ -569,3 +569,453 @@ Client [WEB_EMBEDDED_PLAYER] failed: Video player configuration error
 2026-08-08T09:25:32.773+02:00  INFO 11008 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/zwpvpp0y27sh3lv7/players/686137998177206281?noReplace=False, client=127.0.0.1, payload={"track": {"encoded": "QAAA2gMAPE1lbG9kaWVzIG9mIExpZmUgKEZpbmFsIEZhbnRhc3kgSVgpIHwgQ2xhc3NpY2FsIEd1aXRhciBDb3ZlcgAQSm9obiBPZXRoIEd1aXRhcgAAAAAABOIAAAtVOTlZcW1UWmdpNAABACtodHRwczovL3d3dy55b3V0dWJlLmNvbS93YXRjaD92PVU5OVlxbVRaZ2k0AQAwaHR0cHM6Ly9pLnl0aW1nLmNvbS92aS9VOTlZcW1UWmdpNC9tcWRlZmF1bHQuanBnAAAHeW91dHViZQAAAAAAAAAA", "userData": {}}, "volume": 100, "position": 0, "endTime": null, "paused": false, "filters": {"equalizer": [{"band": 0, "gain": 0.0}, {"band": 1, "gain": 0.0}, {"band": 2, "gain": 0.0}, {"band": 3, "gain": 0.0}, {"band": 4, "gain": 0.0}, {"band": 5, "gain": 0.0}, {"band": 6, "gain": 0.0}, {"band": 7, "gain": 0.0}, {"band": 8, "gain": 0.0}, {"band": 9, "gain": 0.0}, {"band": 10, "gain": 0.0}, {"band": 11, "gain": 0.0}, {"band": 12, "gain": 0.0}, {"band": 13, "gain": 0.0}, {"band": 14, "gain": 0.0}]}}
 2026-08-08T09:30:52.889+02:00  INFO 11008 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/zwpvpp0y27sh3lv7/players/686137998177206281?noReplace=False, client=127.0.0.1, payload={"track": {"encoded": "QAAAyQMAK0RyYWdvbiBBZ2U6IElucXVpc2l0aW9uIE1haW4gdGhlbWUgZXh0ZW5kZWQAEENsb3JhcyBNY1NtdWdnZXIAAAAAAAdeuAALZHJ3WXNEd05VcFUAAQAraHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj1kcndZc0R3TlVwVQEAMGh0dHBzOi8vaS55dGltZy5jb20vdmkvZHJ3WXNEd05VcFUvbXFkZWZhdWx0LmpwZwAAB3lvdXR1YmUAAAAAAAAAAA==", "userData": {}}, "volume": 100, "position": 0, "endTime": null, "paused": false, "filters": {"equalizer": [{"band": 0, "gain": 0.0}, {"band": 1, "gain": 0.0}, {"band": 2, "gain": 0.0}, {"band": 3, "gain": 0.0}, {"band": 4, "gain": 0.0}, {"band": 5, "gain": 0.0}, {"band": 6, "gain": 0.0}, {"band": 7, "gain": 0.0}, {"band": 8, "gain": 0.0}, {"band": 9, "gain": 0.0}, {"band": 10, "gain": 0.0}, {"band": 11, "gain": 0.0}, {"band": 12, "gain": 0.0}, {"band": 13, "gain": 0.0}, {"band": 14, "gain": 0.0}]}}
 2026-08-08T09:34:38.550+02:00  INFO 11008 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/zwpvpp0y27sh3lv7/players/686137998177206281?noReplace=True, client=127.0.0.1, payload={"voice": {"sessionId": "788f4aa5c8f526a722572725498a8bb4", "token": "16ea8a98bc6adc2b", "endpoint": "c-waw04-469c31ae.discord.media:443", "channelId": "1056200069952589924"}}
+2026-08-08T09:56:00.793+02:00  INFO 5528 --- [Lavalink] [main] o.s.boot.SpringApplication               :   .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.0)
+
+
+2026-08-08T09:56:00.966+02:00  INFO 5528 --- [Lavalink] [main] lavalink.server.Launcher                 : Starting Launcher v4.2.2 using Java 21.0.1 with PID 5528 (C:\Programowanie\AlterBard\Lavalink.jar started by HP in C:\Programowanie\AlterBard)
+2026-08-08T09:56:00.980+02:00  INFO 5528 --- [Lavalink] [main] lavalink.server.Launcher                 : No active profile set, falling back to 1 default profile: "default"
+2026-08-08T09:56:02.027+02:00  INFO 5528 --- [Lavalink] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=3d6bf653-92ea-3fde-943a-10b9f8cd696e
+2026-08-08T09:56:02.801+02:00  INFO 5528 --- [Lavalink] [main] l.server.bootstrap.PluginManager         : Found plugin 'youtube-plugin' version '1.18.2'
+2026-08-08T09:56:03.832+02:00  INFO 5528 --- [Lavalink] [main] l.server.bootstrap.PluginManager         : Loaded 'youtube-plugin-1.18.2.jar' (17 classes)
+2026-08-08T09:56:04.188+02:00  INFO 5528 --- [Lavalink] [main] lavalink.server.Launcher                 : Started Launcher in 4.277 seconds (process running for 5.102)
+2026-08-08T09:56:04.301+02:00  INFO 5528 --- [Lavalink] [main] lavalink.server.Launcher                 : 
+
+[32m       .  [31m _                  _ _       _    [32m__ _ _
+[32m      /\\ [31m| | __ ___   ____ _| (_)_ __ | | __[32m\ \ \ \
+[32m     ( ( )[31m| |/ _` \ \ / / _` | | | '_ \| |/ /[32m \ \ \ \
+[32m      \\/ [31m| | (_| |\ V / (_| | | | | | |   < [32m  ) ) ) )
+[32m       '  [31m|_|\__,_| \_/ \__,_|_|_|_| |_|_|\_\[32m / / / /
+[0m    =========================================[32m/_/_/_/[0m
+
+	Version:        4.2.2
+	Build time:     06.03.2026 23:24:16 UTC
+	Branch          HEAD
+	Commit:         e8503fd
+	Commit time:    06.03.2026 23:21:15 UTC
+	JVM:            21.0.1
+	Lavaplayer      2.2.6
+
+2026-08-08T09:56:04.317+02:00  INFO 5528 --- [Lavalink] [main] o.s.boot.SpringApplication               :   .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.0)
+
+
+2026-08-08T09:56:04.334+02:00  INFO 5528 --- [Lavalink] [main] lavalink.server.Launcher                 : No active profile set, falling back to 1 default profile: "default"
+2026-08-08T09:56:05.271+02:00  WARN 5528 --- [Lavalink] [main] io.undertow.websockets.jsr               : UT026010: Buffer pool was not set on WebSocketDeploymentInfo, the default pool will be used
+2026-08-08T09:56:05.303+02:00  INFO 5528 --- [Lavalink] [main] io.undertow.servlet                      : Initializing Spring embedded WebApplicationContext
+2026-08-08T09:56:05.304+02:00  INFO 5528 --- [Lavalink] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 964 ms
+2026-08-08T09:56:06.163+02:00  INFO 5528 --- [Lavalink] [main] c.s.d.l.tools.GarbageCollectionMonitor   : GC monitoring enabled, reporting results every 2 minutes.
+2026-08-08T09:56:06.303+02:00  INFO 5528 --- [Lavalink] [main] d.l.youtube.plugin.YoutubePluginLoader   : YouTube source initialised with clients: WEB_REMIX, ANDROID_VR, WEB, WEB_EMBEDDED_PLAYER 
+2026-08-08T09:56:06.315+02:00  WARN 5528 --- [Lavalink] [main] l.server.config.SentryConfiguration      : Turning off sentry
+2026-08-08T09:56:06.628+02:00  INFO 5528 --- [Lavalink] [main] l.server.config.KoeConfiguration         : OS: WINDOWS, Arch: X86_64
+2026-08-08T09:56:06.629+02:00  INFO 5528 --- [Lavalink] [main] l.server.config.KoeConfiguration         : Enabling JDA-NAS
+2026-08-08T09:56:06.638+02:00  INFO 5528 --- [Lavalink] [main] c.s.l.c.natives.NativeLibraryLoader      : Native library udpqueue: loading with filter null
+2026-08-08T09:56:06.647+02:00  INFO 5528 --- [Lavalink] [main] c.s.l.c.natives.NativeLibraryLoader      : Native library udpqueue: successfully loaded.
+2026-08-08T09:56:07.060+02:00  INFO 5528 --- [Lavalink] [main] io.undertow                              : starting server: Undertow - 2.3.13.Final
+2026-08-08T09:56:07.076+02:00  INFO 5528 --- [Lavalink] [main] org.xnio                                 : XNIO version 3.8.8.Final
+2026-08-08T09:56:07.090+02:00  INFO 5528 --- [Lavalink] [main] org.xnio.nio                             : XNIO NIO Implementation Version 3.8.8.Final
+2026-08-08T09:56:07.256+02:00  INFO 5528 --- [Lavalink] [main] org.jboss.threads                        : JBoss Threads version 3.5.0.Final
+2026-08-08T09:56:07.363+02:00  INFO 5528 --- [Lavalink] [main] o.s.b.w.e.undertow.UndertowWebServer     : Undertow started on port 2333 (http) with context path '/'
+2026-08-08T09:56:07.378+02:00  INFO 5528 --- [Lavalink] [main] lavalink.server.Launcher                 : Started Launcher in 3.179 seconds (process running for 8.291)
+2026-08-08T09:56:07.381+02:00  INFO 5528 --- [Lavalink] [main] lavalink.server.Launcher                 : Lavalink is ready to accept connections.
+2026-08-08T09:56:14.314+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] io.undertow.servlet                      : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-08-08T09:56:14.315+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-08-08T09:56:14.317+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-08-08T09:56:14.363+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.HandshakeInterceptorImpl     : Incoming connection from /127.0.0.1:54741
+2026-08-08T09:56:14.390+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/websocket, client=127.0.0.1
+2026-08-08T09:56:14.455+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] c.s.l.c.natives.NativeLibraryLoader      : Native library dave-jvm: loading with filter null
+2026-08-08T09:56:14.491+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] c.s.l.c.natives.NativeLibraryLoader      : Native library dave-jvm: successfully loaded.
+2026-08-08T09:56:14.533+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] lavalink.server.io.SocketServer          : Connection successfully established from Wavelink/3.5.2
+2026-08-08T09:56:14.946+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-3] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/diaq0qytwi9u9at0, client=127.0.0.1, payload={"resuming": true, "timeout": 60}
+2026-08-08T09:56:15.011+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/info, client=127.0.0.1
+2026-08-08T09:56:17.273+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/diaq0qytwi9u9at0/players/686137998177206281?noReplace=True, client=127.0.0.1, payload={"voice": {"sessionId": "d310a2c544bf6b4028972fb705e362a7", "token": "16ea8a98bc6adc2b", "endpoint": "c-waw04-469c31ae.discord.media:443", "channelId": "1056200069952589924"}}
+2026-08-08T09:56:17.296+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=kMUdPF260Uk"
+2026-08-08T09:56:17.795+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] d.l.y.http.YoutubeAccessTokenTracker     : Updating YouTube visitor id succeeded, new one is CgtzeGlNUm9IcHNDSSiiwtvTBjIoCgJQTBIiEh4SHAsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicgNDoCCAFi4AIK3QIxNy5ZVEU9Q0tkQVg3YlJWdUZ0dG1sWDhmSDhGY0lCN2NLYWFsQTU0R1BhVmVuT1dYdkpSNlNlM0RpN1U5N2J5dldwNmh2UXlyRXJOVzgzWTJySDg4YmFjTWJFVEY4dkhubWsyNUl1T1ZGaTRCQV81QzExbkdHOGZRa2VyTnZ6dmZYUWNUcnpHWnNObjM5QU1zU0Z2cVhvZFpIcmhYdzNHMkM5NmxSRnltbDA2RWcwR2hGM21QaFdpaFoyTDI0R2NXemp4N052cUVBMXQ1b3pISEdsYnZsb3Z0TGQ1MjNDZXBVRmdPb01xSGR5S3FJVDJwNkFsWFNRNkxTLWRlNG9BVTdRdVhGQmxWOVRWZ3pUZmlCa3BGOHE0cW5rNk4waHk5VWwtM3V2eVpyT1JOSEJheW9CSnJ2U2FaY3M5MDJoX3Z0cDJyWmZZSkl1QVlCUUtFcWRkeUtNVVBOalFn, next update will be after 600 seconds.
+2026-08-08T09:56:17.942+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Guild Wars Prophecies - Theme Song (HD)
+2026-08-08T09:56:17.956+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DkMUdPF260Uk, client=127.0.0.1
+2026-08-08T09:56:17.975+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/diaq0qytwi9u9at0/players/686137998177206281?noReplace=False, client=127.0.0.1, payload={"track": {"encoded": "QAAAvQMAJ0d1aWxkIFdhcnMgUHJvcGhlY2llcyAtIFRoZW1lIFNvbmcgKEhEKQAISERHYW1lcnoAAAAAAAFrSAALa01VZFBGMjYwVWsAAQAraHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj1rTVVkUEYyNjBVawEAMGh0dHBzOi8vaS55dGltZy5jb20vdmkva01VZFBGMjYwVWsvbXFkZWZhdWx0LmpwZwAAB3lvdXR1YmUAAAAAAAAAAA==", "userData": {}}, "volume": 100, "position": 0, "endTime": null, "paused": false, "filters": {"equalizer": [{"band": 0, "gain": 0.0}, {"band": 1, "gain": 0.0}, {"band": 2, "gain": 0.0}, {"band": 3, "gain": 0.0}, {"band": 4, "gain": 0.0}, {"band": 5, "gain": 0.0}, {"band": 6, "gain": 0.0}, {"band": 7, "gain": 0.0}, {"band": 8, "gain": 0.0}, {"band": 9, "gain": 0.0}, {"band": 10, "gain": 0.0}, {"band": 11, "gain": 0.0}, {"band": 12, "gain": 0.0}, {"band": 13, "gain": 0.0}, {"band": 14, "gain": 0.0}]}}
+2026-08-08T09:56:17.978+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=BVnPiLi8vOo"
+2026-08-08T09:56:18.179+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Guild Wars 2 OST - 78. Fear Not This Night (ft. Asja Kadrić)
+2026-08-08T09:56:18.183+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DBVnPiLi8vOo, client=127.0.0.1
+2026-08-08T09:56:18.187+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=mszrv0qBTsU"
+2026-08-08T09:56:18.388+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track A Poem of Bragi Skill Sound Effect [ฺBard] | Ragnarok Online
+2026-08-08T09:56:18.391+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dmszrv0qBTsU, client=127.0.0.1
+2026-08-08T09:56:18.395+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=ljyRWgdCsl8"
+2026-08-08T09:56:18.517+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Gothic -- OST 02 'Old Camp'
+2026-08-08T09:56:18.519+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DljyRWgdCsl8, client=127.0.0.1
+2026-08-08T09:56:18.522+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=qoryjXXxkFU"
+2026-08-08T09:56:18.652+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Warframe - Sleeping in the Cold Below (Gingertail Cover)
+2026-08-08T09:56:18.653+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DqoryjXXxkFU, client=127.0.0.1
+2026-08-08T09:56:18.656+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=5XR3ckkbxzc"
+2026-08-08T09:56:18.796+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Guild Wars: Factions Soundtrack - Theme
+2026-08-08T09:56:18.805+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D5XR3ckkbxzc, client=127.0.0.1
+2026-08-08T09:56:18.810+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=hv6zVmoQ9Bc"
+2026-08-08T09:56:18.938+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Mu Online - Old Mu Online Theme Song
+2026-08-08T09:56:18.943+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dhv6zVmoQ9Bc, client=127.0.0.1
+2026-08-08T09:56:18.950+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=XpJEg6MTPzc"
+2026-08-08T09:56:19.077+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Elder Scrolls IV - Oblivion Soundtrack - 04 Harvest Dawn
+2026-08-08T09:56:19.082+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DXpJEg6MTPzc, client=127.0.0.1
+2026-08-08T09:56:19.089+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=r46yzCB82kA"
+2026-08-08T09:56:19.215+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track NWN Hordes of the Underdark Soundtrack Rebel Camp
+2026-08-08T09:56:19.219+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dr46yzCB82kA, client=127.0.0.1
+2026-08-08T09:56:19.224+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=m8vlkDE4STs"
+2026-08-08T09:56:19.364+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Morrowind OST - 08 Blessing Of Vivec - HQ Audio
+2026-08-08T09:56:19.369+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dm8vlkDE4STs, client=127.0.0.1
+2026-08-08T09:56:19.374+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=40S04c7ZUlo"
+2026-08-08T09:56:19.706+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track A Tavern on the Riverbank
+2026-08-08T09:56:19.710+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D40S04c7ZUlo, client=127.0.0.1
+2026-08-08T09:56:19.714+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=GSwATqPUsv0"
+2026-08-08T09:56:19.831+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Heroes of Might and Magic 3 Music: Combat 2
+2026-08-08T09:56:19.834+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DGSwATqPUsv0, client=127.0.0.1
+2026-08-08T09:56:19.839+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=viM0-3PXef0"
+2026-08-08T09:56:19.953+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Witcher 3: Wild Hunt OST - Sword of Destiny - Main Theme
+2026-08-08T09:56:19.955+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DviM0-3PXef0, client=127.0.0.1
+2026-08-08T09:56:19.959+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=JDSapiZyxMw"
+2026-08-08T09:56:20.091+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Trine 2 Main Theme
+2026-08-08T09:56:20.097+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DJDSapiZyxMw, client=127.0.0.1
+2026-08-08T09:56:20.101+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=s9NIBZfVBW4"
+2026-08-08T09:56:20.240+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track SKÁLD - Rún (Official Music Video)
+2026-08-08T09:56:20.243+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Ds9NIBZfVBW4, client=127.0.0.1
+2026-08-08T09:56:20.246+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=lii5B_y3Bvo"
+2026-08-08T09:56:20.361+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track WildStar Extended OST: Systemic Domination (Dominion Theme)
+2026-08-08T09:56:20.365+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dlii5B_y3Bvo, client=127.0.0.1
+2026-08-08T09:56:20.369+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=o3SZee4YZX8"
+2026-08-08T09:56:20.542+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Bastion Original Soundtrack - Build That Wall (Zia's Theme)
+2026-08-08T09:56:20.545+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Do3SZee4YZX8, client=127.0.0.1
+2026-08-08T09:56:20.552+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=oNXcnuyaZDw"
+2026-08-08T09:56:20.712+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Epic Battle Fantasy 3 - That Which We Have Lost and Forgotten
+2026-08-08T09:56:20.715+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DoNXcnuyaZDw, client=127.0.0.1
+2026-08-08T09:56:20.721+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=y9hh91-2iaA"
+2026-08-08T09:56:20.864+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track 1. God of War | God of War OST
+2026-08-08T09:56:20.866+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dy9hh91-2iaA, client=127.0.0.1
+2026-08-08T09:56:20.872+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=oWFEVbfCcOY"
+2026-08-08T09:56:20.996+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Dragon Age: Origins - Main Theme
+2026-08-08T09:56:20.999+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DoWFEVbfCcOY, client=127.0.0.1
+2026-08-08T09:56:21.006+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=DN-Dcwq4i2g"
+2026-08-08T09:56:21.144+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Divinity: Original Sin 2 OST - Main Theme (Full)
+2026-08-08T09:56:21.148+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DDN-Dcwq4i2g, client=127.0.0.1
+2026-08-08T09:56:21.153+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=CjpSTpXNmbY"
+2026-08-08T09:56:21.315+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Ashes of Creation theme
+2026-08-08T09:56:21.317+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DCjpSTpXNmbY, client=127.0.0.1
+2026-08-08T09:56:21.320+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=2189o3l2eDE"
+2026-08-08T09:56:21.455+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Light Of Hope (Wars and Warriors: Joan of Arc Soundtrack)
+2026-08-08T09:56:21.459+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D2189o3l2eDE, client=127.0.0.1
+2026-08-08T09:56:21.464+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=X-PNMaf7C-o"
+2026-08-08T09:56:21.599+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Official World of Warcraft Soundtrack - (07) Seasons of War
+2026-08-08T09:56:21.602+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DX-PNMaf7C-o, client=127.0.0.1
+2026-08-08T09:56:21.608+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=n_LApFnTfP8"
+2026-08-08T09:56:21.750+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Davy Jones [Lyrics]
+2026-08-08T09:56:21.753+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dn_LApFnTfP8, client=127.0.0.1
+2026-08-08T09:56:21.759+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=t32ejtdsvlU"
+2026-08-08T09:56:21.967+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track England Theme - Medieval (Civilization 6 OST) | Scarborough Fair, The Bold Grenadier
+2026-08-08T09:56:21.970+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dt32ejtdsvlU, client=127.0.0.1
+2026-08-08T09:56:21.978+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=3m51oKG3BKA"
+2026-08-08T09:56:22.151+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track World of Warcraft - Arthas My Son (Lyrics)
+2026-08-08T09:56:22.153+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D3m51oKG3BKA, client=127.0.0.1
+2026-08-08T09:56:22.158+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=R4u5v0S-jSE"
+2026-08-08T09:56:22.284+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Only The Beginning of The Adventure
+2026-08-08T09:56:22.288+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DR4u5v0S-jSE, client=127.0.0.1
+2026-08-08T09:56:22.295+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=-bHvk2hQXoY"
+2026-08-08T09:56:22.447+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Danheim - Runar
+2026-08-08T09:56:22.451+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D-bHvk2hQXoY, client=127.0.0.1
+2026-08-08T09:56:22.457+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=ndBwvhAu1TU"
+2026-08-08T09:56:22.597+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Dragon Age 2 Soundtrack - Tavern Music
+2026-08-08T09:56:22.600+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DndBwvhAu1TU, client=127.0.0.1
+2026-08-08T09:56:22.603+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=E52rxz2sjRs"
+2026-08-08T09:56:22.732+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Willow Maid - Erutan (katethegreat19)
+2026-08-08T09:56:22.735+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DE52rxz2sjRs, client=127.0.0.1
+2026-08-08T09:56:22.741+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=uYDThGTph98"
+2026-08-08T09:56:22.902+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Bannered Mare
+2026-08-08T09:56:22.905+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DuYDThGTph98, client=127.0.0.1
+2026-08-08T09:56:22.911+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=AjZRHMDelHg"
+2026-08-08T09:56:23.055+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Freedom (Wars and Warriors: Joan of Arc Soundtrack)
+2026-08-08T09:56:23.060+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DAjZRHMDelHg, client=127.0.0.1
+2026-08-08T09:56:23.066+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=s-jaOwPSef8"
+2026-08-08T09:56:23.204+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Aion Soundtrack - Forgotten Sorrow (English Version)
+2026-08-08T09:56:23.206+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Ds-jaOwPSef8, client=127.0.0.1
+2026-08-08T09:56:23.212+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=aWmvVEm5SC8"
+2026-08-08T09:56:23.351+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track 43 Baldur's Gate 3 Original Soundtrack - The Power (Song version)
+2026-08-08T09:56:23.355+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DaWmvVEm5SC8, client=127.0.0.1
+2026-08-08T09:56:23.360+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=800be1ZmGd0"
+2026-08-08T09:56:23.535+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Official World of Warcraft Soundtrack - (01) Legends of Azeroth
+2026-08-08T09:56:23.537+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D800be1ZmGd0, client=127.0.0.1
+2026-08-08T09:56:23.539+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=8oThMTQvuxI"
+2026-08-08T09:56:23.672+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Dragonborn Comes - Skyrim (Gingertail Cover)
+2026-08-08T09:56:23.676+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D8oThMTQvuxI, client=127.0.0.1
+2026-08-08T09:56:23.683+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=drwYsDwNUpU"
+2026-08-08T09:56:23.831+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Dragon Age: Inquisition Main theme extended
+2026-08-08T09:56:23.833+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DdrwYsDwNUpU, client=127.0.0.1
+2026-08-08T09:56:23.838+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=W7cGgWAjBuk"
+2026-08-08T09:56:23.989+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Stronghold Soundtrack - Sad Times
+2026-08-08T09:56:23.991+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DW7cGgWAjBuk, client=127.0.0.1
+2026-08-08T09:56:23.995+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=UB63Jn2i_kw"
+2026-08-08T09:56:24.142+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Lineage II - Talking Island Theme
+2026-08-08T09:56:24.145+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DUB63Jn2i_kw, client=127.0.0.1
+2026-08-08T09:56:24.150+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=3xIHIQiGXBo"
+2026-08-08T09:56:24.294+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Star Wars: Darth Revan Theme | EPIC VERSION
+2026-08-08T09:56:24.296+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D3xIHIQiGXBo, client=127.0.0.1
+2026-08-08T09:56:24.300+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=88RseKRT-ZM"
+2026-08-08T09:56:24.433+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Main Menu Theme/Bastion (SpellForce 3 OST)
+2026-08-08T09:56:24.436+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D88RseKRT-ZM, client=127.0.0.1
+2026-08-08T09:56:24.441+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=m82dVY77ZmU"
+2026-08-08T09:56:24.577+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Fable OST - Oakvale
+2026-08-08T09:56:24.578+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dm82dVY77ZmU, client=127.0.0.1
+2026-08-08T09:56:24.580+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=BT8113CQ0K0"
+2026-08-08T09:56:24.748+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Albion Online OST | Jonne Valtonen - 01 - Main Theme
+2026-08-08T09:56:24.751+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DBT8113CQ0K0, client=127.0.0.1
+2026-08-08T09:56:24.757+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=2XQKQ0hEt2c"
+2026-08-08T09:56:24.913+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Apocalypsis Noctis FFXV Lyrics+Latin
+2026-08-08T09:56:24.915+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D2XQKQ0hEt2c, client=127.0.0.1
+2026-08-08T09:56:24.919+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=HnDJ83Npv3I"
+2026-08-08T09:56:25.065+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Skyrim Music Tavern 1
+2026-08-08T09:56:25.068+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DHnDJ83Npv3I, client=127.0.0.1
+2026-08-08T09:56:25.074+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=RZmNxwFN76g"
+2026-08-08T09:56:25.210+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Marvin's Theme - The Chronicles of Myrtana Official Soundtrack
+2026-08-08T09:56:25.213+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DRZmNxwFN76g, client=127.0.0.1
+2026-08-08T09:56:25.219+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=akd-3VcxhVI"
+2026-08-08T09:56:25.362+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Lineage 2 - Giran Theme
+2026-08-08T09:56:25.366+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dakd-3VcxhVI, client=127.0.0.1
+2026-08-08T09:56:25.372+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=oQECpgby4qA"
+2026-08-08T09:56:25.516+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Guild Wars Login Screen Theme
+2026-08-08T09:56:25.519+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DoQECpgby4qA, client=127.0.0.1
+2026-08-08T09:56:25.525+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=XheJnmLAwhk"
+2026-08-08T09:56:25.664+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Diablo 2 - Tristram (HQ)
+2026-08-08T09:56:25.667+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DXheJnmLAwhk, client=127.0.0.1
+2026-08-08T09:56:25.673+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=dwMZSXFJ4S8"
+2026-08-08T09:56:25.798+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Lineage 2 - Aden Theme
+2026-08-08T09:56:25.802+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DdwMZSXFJ4S8, client=127.0.0.1
+2026-08-08T09:56:25.808+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=I7p-hqRz7cw"
+2026-08-08T09:56:25.963+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Cataclysm Soundtrack - Elwynn Forest (Westfall)
+2026-08-08T09:56:25.966+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DI7p-hqRz7cw, client=127.0.0.1
+2026-08-08T09:56:25.972+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=g60bPpXEq9Q"
+2026-08-08T09:56:26.146+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Bastion Original Soundtrack - Setting Sail, Coming Home (End Theme)
+2026-08-08T09:56:26.150+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dg60bPpXEq9Q, client=127.0.0.1
+2026-08-08T09:56:26.155+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=Xs0Lxif1u9E"
+2026-08-08T09:56:26.293+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track RADWIMPS - すずめ feat.十明 [Official Lyric Video]
+2026-08-08T09:56:26.297+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DXs0Lxif1u9E, client=127.0.0.1
+2026-08-08T09:56:26.305+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=HIdHdw_8yJk"
+2026-08-08T09:56:26.453+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Saltatio Mortis - Pray To The Hunter feat. „The Elder Scrolls Online“ (Official Video)
+2026-08-08T09:56:26.456+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DHIdHdw_8yJk, client=127.0.0.1
+2026-08-08T09:56:26.462+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=5K4TIQXCmPQ"
+2026-08-08T09:56:26.679+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Téir abhaile 'riú - LYRICS + Translation - Celtic Woman
+2026-08-08T09:56:26.680+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D5K4TIQXCmPQ, client=127.0.0.1
+2026-08-08T09:56:26.682+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=4DYL2EOsw6A"
+2026-08-08T09:56:26.832+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Might and Magic Heroes 7 - Sylvan Theme Music (The Elven Coronation)
+2026-08-08T09:56:26.835+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D4DYL2EOsw6A, client=127.0.0.1
+2026-08-08T09:56:26.838+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=xbtY4rDSRKU"
+2026-08-08T09:56:26.972+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Bill Brown - Forest Calling
+2026-08-08T09:56:26.975+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DxbtY4rDSRKU, client=127.0.0.1
+2026-08-08T09:56:26.981+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=G_GLDCDRuC0"
+2026-08-08T09:56:27.118+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track OST - ESO - For Blood, for Glory, for Honor - 1080p HD
+2026-08-08T09:56:27.122+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DG_GLDCDRuC0, client=127.0.0.1
+2026-08-08T09:56:27.126+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=xua4P0MFIgQ"
+2026-08-08T09:56:27.247+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track RuneScape: Harmony
+2026-08-08T09:56:27.251+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dxua4P0MFIgQ, client=127.0.0.1
+2026-08-08T09:56:27.256+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=EV46qFZrOzk"
+2026-08-08T09:56:27.421+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track World of Warcraft - Invincible (Lyrics)
+2026-08-08T09:56:27.424+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DEV46qFZrOzk, client=127.0.0.1
+2026-08-08T09:56:27.431+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=nMOyOlmBYCU"
+2026-08-08T09:56:27.577+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Drunken Sailor - MALINDA ft. Bobby Waters (OFFICIAL MUSIC VIDEO)
+2026-08-08T09:56:27.579+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DnMOyOlmBYCU, client=127.0.0.1
+2026-08-08T09:56:27.582+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=1oFGagjD18o"
+2026-08-08T09:56:27.730+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Guild Wars Prophecies Soundtrack - Crystal Oasis
+2026-08-08T09:56:27.734+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D1oFGagjD18o, client=127.0.0.1
+2026-08-08T09:56:27.739+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=bREZqkbI2WU"
+2026-08-08T09:56:27.878+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track "Answers" with Official Lyrics | Final Fantasy XIV
+2026-08-08T09:56:27.879+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DbREZqkbI2WU, client=127.0.0.1
+2026-08-08T09:56:27.881+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=9FeZYagK4BQ"
+2026-08-08T09:56:28.011+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Witcher 3 OST - Ladies of the Woods (Extended Version)
+2026-08-08T09:56:28.012+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D9FeZYagK4BQ, client=127.0.0.1
+2026-08-08T09:56:28.014+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=mQQKZ5cgybU"
+2026-08-08T09:56:28.162+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Gladiator • Now We Are Free • Hans Zimmer & Lisa Gerrard
+2026-08-08T09:56:28.164+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DmQQKZ5cgybU, client=127.0.0.1
+2026-08-08T09:56:28.166+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=WBOMpfxsUpk"
+2026-08-08T09:56:28.334+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Fantastic Beasts and Where to Find Them Official Soundtrack | Main Titles | WaterTower
+2026-08-08T09:56:28.336+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DWBOMpfxsUpk, client=127.0.0.1
+2026-08-08T09:56:28.342+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=PbIPL0tKrRM"
+2026-08-08T09:56:28.475+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Pillars of Eternity II: Deadfire - Main Theme
+2026-08-08T09:56:28.478+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DPbIPL0tKrRM, client=127.0.0.1
+2026-08-08T09:56:28.484+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=UNREuwdJCw0"
+2026-08-08T09:56:28.614+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Assassin's Creed IV Black Flag - Assassin's Creed IV Black Flag Main Theme (Track 01)
+2026-08-08T09:56:28.618+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DUNREuwdJCw0, client=127.0.0.1
+2026-08-08T09:56:28.624+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=p8En1WOlm0c"
+2026-08-08T09:56:28.785+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Pathfinder: Kingmaker. Inon Zur - Main Theme.
+2026-08-08T09:56:28.788+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dp8En1WOlm0c, client=127.0.0.1
+2026-08-08T09:56:28.794+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=4ZLYOvBqK0M"
+2026-08-08T09:56:28.992+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Heroes VII - Hope For Green Falls (Haven faction theme)
+2026-08-08T09:56:28.994+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D4ZLYOvBqK0M, client=127.0.0.1
+2026-08-08T09:56:29.001+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=-scz7eXNgik"
+2026-08-08T09:56:29.149+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Hytale OST - A New Adventure
+2026-08-08T09:56:29.152+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D-scz7eXNgik, client=127.0.0.1
+2026-08-08T09:56:29.159+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=wmxgUntDyIM"
+2026-08-08T09:56:29.304+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Lineage 2 - Caravans Crossing (Gludin Village Theme) OST
+2026-08-08T09:56:29.307+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DwmxgUntDyIM, client=127.0.0.1
+2026-08-08T09:56:29.313+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=X5lv7T1nMUs"
+2026-08-08T09:56:29.422+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Fable 3 OST - Brightwall
+2026-08-08T09:56:29.424+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DX5lv7T1nMUs, client=127.0.0.1
+2026-08-08T09:56:29.426+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=DVeH-WSIOa4"
+2026-08-08T09:56:29.554+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Heroes Of Might And Magic III Soundtrack-Castle Town
+2026-08-08T09:56:29.557+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DDVeH-WSIOa4, client=127.0.0.1
+2026-08-08T09:56:29.562+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=F7Yw8C8fCOA"
+2026-08-08T09:56:29.684+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track After the Storm Lineage 2 OST
+2026-08-08T09:56:29.687+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DF7Yw8C8fCOA, client=127.0.0.1
+2026-08-08T09:56:29.695+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=gb133m_AEnY"
+2026-08-08T09:56:29.820+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Neverwinter Nights Main Theme
+2026-08-08T09:56:29.824+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dgb133m_AEnY, client=127.0.0.1
+2026-08-08T09:56:29.829+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=re32xnyYP3A"
+2026-08-08T09:56:30.000+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Malukah - Reignite - Mass Effect/Shepard Tribute Song
+2026-08-08T09:56:30.003+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dre32xnyYP3A, client=127.0.0.1
+2026-08-08T09:56:30.011+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=RVoNlomrzhQ"
+2026-08-08T09:56:30.176+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Robin Hood - The Legend Of Sherwood Soundtrack - 02 Sherwood
+2026-08-08T09:56:30.178+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DRVoNlomrzhQ, client=127.0.0.1
+2026-08-08T09:56:30.180+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=ccosoq3rcwc"
+2026-08-08T09:56:30.333+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track No More Burden (Wars and Warriors: Joan of Arc Soundtrack)
+2026-08-08T09:56:30.336+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dccosoq3rcwc, client=127.0.0.1
+2026-08-08T09:56:30.341+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=C15I3uJAhEw"
+2026-08-08T09:56:30.481+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track WoW Dragonflight OST: Uldaman Lost Dwarves
+2026-08-08T09:56:30.484+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DC15I3uJAhEw, client=127.0.0.1
+2026-08-08T09:56:30.489+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=Q7WQbLtS858"
+2026-08-08T09:56:30.636+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Heroes VII - The Journeyman's Encounter (Stronghold Faction Theme)
+2026-08-08T09:56:30.640+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DQ7WQbLtS858, client=127.0.0.1
+2026-08-08T09:56:30.646+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=EsCw772dJo8"
+2026-08-08T09:56:30.781+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track ESO: Summerset - Main Theme
+2026-08-08T09:56:30.784+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DEsCw772dJo8, client=127.0.0.1
+2026-08-08T09:56:30.788+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=HCXTWH0qx2k"
+2026-08-08T09:56:30.915+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Uldaman: Legacy of Tyr | Final Encounter Boss Music (WoW Dragonflight)
+2026-08-08T09:56:30.917+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DHCXTWH0qx2k, client=127.0.0.1
+2026-08-08T09:56:30.923+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=yGnfFW-vyzU"
+2026-08-08T09:56:31.046+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track King Arthur Official Soundtrack | The Devil and The Huntsman - Daniel Pemberton | WaterTower
+2026-08-08T09:56:31.049+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DyGnfFW-vyzU, client=127.0.0.1
+2026-08-08T09:56:31.056+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=hEOeKuvg27E"
+2026-08-08T09:56:31.174+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track "Battlefield 1942" Epic  Soundtrack - Main Theme by Joel Eriksson
+2026-08-08T09:56:31.177+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DhEOeKuvg27E, client=127.0.0.1
+2026-08-08T09:56:31.183+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=iLStdBTxAxs"
+2026-08-08T09:56:31.326+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Elder Scrolls IV: Oblivion Theme Extended
+2026-08-08T09:56:31.328+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DiLStdBTxAxs, client=127.0.0.1
+2026-08-08T09:56:31.335+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=PlgohSf1o48"
+2026-08-08T09:56:31.533+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Ragnarok Online OST 79: The Great
+2026-08-08T09:56:31.536+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DPlgohSf1o48, client=127.0.0.1
+2026-08-08T09:56:31.540+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=WQYN2P3E06s"
+2026-08-08T09:56:31.730+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Christopher Tin - Sogno di Volare ("The Dream of Flight") (Civilization VI Main Theme)
+2026-08-08T09:56:31.732+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DWQYN2P3E06s, client=127.0.0.1
+2026-08-08T09:56:31.735+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=U99YqmTZgi4"
+2026-08-08T09:56:31.858+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Melodies of Life (Final Fantasy IX) | Classical Guitar Cover
+2026-08-08T09:56:31.861+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DU99YqmTZgi4, client=127.0.0.1
+2026-08-08T09:56:31.868+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=AVfBWiBu7cE"
+2026-08-08T09:56:32.028+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Witcher 3: Wild Hunt OST - Hunt or Be Hunted (True Extended Version) HQ
+2026-08-08T09:56:32.031+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DAVfBWiBu7cE, client=127.0.0.1
+2026-08-08T09:56:32.037+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=2CpXYvQmyM0"
+2026-08-08T09:56:32.184+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track TERA OST - 01. TERA Nova
+2026-08-08T09:56:32.186+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D2CpXYvQmyM0, client=127.0.0.1
+2026-08-08T09:56:32.195+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=FOkkE93coIg"
+2026-08-08T09:56:32.493+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Dragonborn Comes - Malukah - Lyrics ( extended version )
+2026-08-08T09:56:32.495+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DFOkkE93coIg, client=127.0.0.1
+2026-08-08T09:56:32.496+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=WXxy3Y8daks"
+2026-08-08T09:56:32.648+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Hearthstone Soundtrack - Main Title
+2026-08-08T09:56:32.651+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DWXxy3Y8daks, client=127.0.0.1
+2026-08-08T09:56:32.657+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=FnTdLHAfEnk"
+2026-08-08T09:56:32.845+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Hytale OST - Adventure and Chill
+2026-08-08T09:56:32.847+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DFnTdLHAfEnk, client=127.0.0.1
+2026-08-08T09:56:32.853+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=83toAokqpPk"
+2026-08-08T09:56:33.000+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track [OST] Lineage 2 OST - Maiden's Love
+2026-08-08T09:56:33.003+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D83toAokqpPk, client=127.0.0.1
+2026-08-08T09:56:33.009+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=zYfe9caNqfA"
+2026-08-08T09:56:33.150+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Destiny 2 Original Soundtrack - Track 11 - Journey (featuring Kronos Quartet)
+2026-08-08T09:56:33.153+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DzYfe9caNqfA, client=127.0.0.1
+2026-08-08T09:56:33.160+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=2g-wBrU9keE"
+2026-08-08T09:56:33.301+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Mists Of Pandaria Soundtrack - 6 - Way Of The Monk
+2026-08-08T09:56:33.303+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D2g-wBrU9keE, client=127.0.0.1
+2026-08-08T09:56:33.305+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=3-aUGjLBThM"
+2026-08-08T09:56:33.429+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track A Land of War and Poetry (feat. Jeremy Soule) - TESO: Morrowind Main Theme (HD)
+2026-08-08T09:56:33.432+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D3-aUGjLBThM, client=127.0.0.1
+2026-08-08T09:56:33.438+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=yjbT7X5kiWc"
+2026-08-08T09:56:33.585+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Hades - In the Blood (Gingertail Cover)
+2026-08-08T09:56:33.587+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DyjbT7X5kiWc, client=127.0.0.1
+2026-08-08T09:56:33.593+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=g60bPpXEq9Q"
+2026-08-08T09:56:33.718+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Bastion Original Soundtrack - Setting Sail, Coming Home (End Theme)
+2026-08-08T09:56:33.721+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dg60bPpXEq9Q, client=127.0.0.1
+2026-08-08T09:56:33.727+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=DLyqSQhS6E0"
+2026-08-08T09:56:33.876+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Soundtrack Gothic 3-Vista Point
+2026-08-08T09:56:33.878+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DDLyqSQhS6E0, client=127.0.0.1
+2026-08-08T09:56:33.884+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=4G3JBl4bTLM"
+2026-08-08T09:56:34.035+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track TERA Soundtrack - By Oriyn's Light
+2026-08-08T09:56:34.038+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D4G3JBl4bTLM, client=127.0.0.1
+2026-08-08T09:56:34.044+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=v85QO_RDFWA"
+2026-08-08T09:56:34.171+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Sandal Maker
+2026-08-08T09:56:34.174+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dv85QO_RDFWA, client=127.0.0.1
+2026-08-08T09:56:34.183+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=s-jaOwPSef8"
+2026-08-08T09:56:34.319+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Aion Soundtrack - Forgotten Sorrow (English Version)
+2026-08-08T09:56:34.320+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Ds-jaOwPSef8, client=127.0.0.1
+2026-08-08T09:56:34.323+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=Jk04ai-HTHE"
+2026-08-08T09:56:34.489+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Epic Battle Fantasy 3 Music: Travel To The North
+2026-08-08T09:56:34.490+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DJk04ai-HTHE, client=127.0.0.1
+2026-08-08T09:56:34.493+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=dhW1mh7U6-U"
+2026-08-08T09:56:34.623+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Celtic Woman - Tír na nÓg ft. Oonagh
+2026-08-08T09:56:34.625+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DdhW1mh7U6-U, client=127.0.0.1
+2026-08-08T09:56:34.632+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=AxwCsV2nzTw"
+2026-08-08T09:56:34.771+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Dungeon Siege Main Theme Extended
+2026-08-08T09:56:34.774+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DAxwCsV2nzTw, client=127.0.0.1
+2026-08-08T09:56:34.780+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=BLqktDBIew8"
+2026-08-08T09:56:34.912+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Witcher 3 OST - Steel for Humans (Extended Version)
+2026-08-08T09:56:34.914+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DBLqktDBIew8, client=127.0.0.1
+2026-08-08T09:56:34.920+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=KYG6xTIHD3Y"
+2026-08-08T09:56:35.057+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Lelianna's Song(With lyrics) - From Dragon Age: Origins Soundtrack
+2026-08-08T09:56:35.060+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DKYG6xTIHD3Y, client=127.0.0.1
+2026-08-08T09:56:35.064+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=0jXTBAGv9ZQ"
+2026-08-08T09:56:35.276+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Halo Theme Song Original
+2026-08-08T09:56:35.278+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D0jXTBAGv9ZQ, client=127.0.0.1
+2026-08-08T09:56:35.284+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=-CZB1TxRnss"
+2026-08-08T09:56:35.437+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Azshara Naga/N'zoth's Theme - Naz'jatar Cinematic Music [World of Warcraft: Battle for Azeroth]
+2026-08-08T09:56:35.440+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D-CZB1TxRnss, client=127.0.0.1
+2026-08-08T09:56:35.446+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=p7KMf5e1z58"
+2026-08-08T09:56:35.588+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Castle Jam
+2026-08-08T09:56:35.591+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Dp7KMf5e1z58, client=127.0.0.1
+2026-08-08T09:56:35.593+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=uxt7bTxEGYs"
+2026-08-08T09:56:35.767+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Bless Online Flying Mount - Aqua Elf Floating City
+2026-08-08T09:56:35.770+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3Duxt7bTxEGYs, client=127.0.0.1
+2026-08-08T09:56:35.773+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=DFX7v83OTbc"
+2026-08-08T09:56:35.931+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Dragon Age Inquisition Theme
+2026-08-08T09:56:35.934+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DDFX7v83OTbc, client=127.0.0.1
+2026-08-08T09:56:35.940+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=LBhqG055qqY"
+2026-08-08T09:56:36.093+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track OST - ESO - The Three Banners-Fanfare - 1080p HD
+2026-08-08T09:56:36.096+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DLBhqG055qqY, client=127.0.0.1
+2026-08-08T09:56:36.098+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=oPKSpL1yn3A"
+2026-08-08T09:56:36.230+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track I am Always With You (Wars and Warriors: Joan of Arc Soundtrack)
+2026-08-08T09:56:36.231+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DoPKSpL1yn3A, client=127.0.0.1
+2026-08-08T09:56:36.237+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=HqSF-DDTI5k"
+2026-08-08T09:56:36.368+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Lineage 2 - Gludio Theme
+2026-08-08T09:56:36.369+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DHqSF-DDTI5k, client=127.0.0.1
+2026-08-08T09:56:36.375+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=UsnRQJxanVM"
+2026-08-08T09:56:36.537+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Skyrim: The Song of the Dragonborn (with lyrics)
+2026-08-08T09:56:36.539+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DUsnRQJxanVM, client=127.0.0.1
+2026-08-08T09:56:36.544+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=09XRcFv0O4M"
+2026-08-08T09:56:36.681+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Star Wars the Old Republic Soundtrack - 01 Clash of Destiny
+2026-08-08T09:56:36.683+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3D09XRcFv0O4M, client=127.0.0.1
+2026-08-08T09:56:36.690+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=EZehl3GsmH8"
+2026-08-08T09:56:36.817+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Stronghold Soundtrack - Under an Old Tree
+2026-08-08T09:56:36.820+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DEZehl3GsmH8, client=127.0.0.1
+2026-08-08T09:56:36.827+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=gIH2t1GcALQ"
+2026-08-08T09:56:37.005+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track The Witcher 3: Wild Hunt - The Nightingale Extended
+2026-08-08T09:56:37.008+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DgIH2t1GcALQ, client=127.0.0.1
+2026-08-08T09:56:37.014+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=jxptIpCYAJA"
+2026-08-08T09:56:37.139+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track VALHALLA CALLING by Miracle Of Sound - ORIGINAL VERSION (Viking/Nordic-inspired Dark Folk Music)
+2026-08-08T09:56:37.143+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DjxptIpCYAJA, client=127.0.0.1
+2026-08-08T09:56:37.149+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Got request to load for identifier "https://www.youtube.com/watch?v=ejafLR6jb0g"
+2026-08-08T09:56:37.300+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.player.AudioLoaderRestHandler   : Loaded track Eye of the North- Overture from Eye of the North
+2026-08-08T09:56:37.302+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : GET /v4/loadtracks?identifier=https://www.youtube.com/watch?v%3DejafLR6jb0g, client=127.0.0.1
+2026-08-08T09:57:51.219+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/diaq0qytwi9u9at0/players/686137998177206281?noReplace=False, client=127.0.0.1, payload={"track": {"encoded": "QAAA1QMAPUd1aWxkIFdhcnMgMiBPU1QgLSA3OC4gRmVhciBOb3QgVGhpcyBOaWdodCAoZnQuIEFzamEgS2FkcmnEhykAClNHVEJpemFycm8AAAAAAASXyAALQlZuUGlMaTh2T28AAQAraHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj1CVm5QaUxpOHZPbwEAMGh0dHBzOi8vaS55dGltZy5jb20vdmkvQlZuUGlMaTh2T28vbXFkZWZhdWx0LmpwZwAAB3lvdXR1YmUAAAAAAAAAAA==", "userData": {}}, "volume": 100, "position": 0, "endTime": null, "paused": false, "filters": {"equalizer": [{"band": 0, "gain": 0.0}, {"band": 1, "gain": 0.0}, {"band": 2, "gain": 0.0}, {"band": 3, "gain": 0.0}, {"band": 4, "gain": 0.0}, {"band": 5, "gain": 0.0}, {"band": 6, "gain": 0.0}, {"band": 7, "gain": 0.0}, {"band": 8, "gain": 0.0}, {"band": 9, "gain": 0.0}, {"band": 10, "gain": 0.0}, {"band": 11, "gain": 0.0}, {"band": 12, "gain": 0.0}, {"band": 13, "gain": 0.0}, {"band": 14, "gain": 0.0}]}}
+2026-08-08T09:58:28.791+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-2] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/diaq0qytwi9u9at0/players/686137998177206281?noReplace=False, client=127.0.0.1, payload={"track": {"encoded": null}}
+2026-08-08T09:58:28.798+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-3] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/diaq0qytwi9u9at0/players/686137998177206281?noReplace=False, client=127.0.0.1, payload={"track": {"encoded": "QAAA0gMAPkEgUG9lbSBvZiBCcmFnaSBTa2lsbCBTb3VuZCBFZmZlY3QgW+C4ukJhcmRdIHwgUmFnbmFyb2sgT25saW5lAAZHaW5nZXIAAAAAAACA6AALbXN6cnYwcUJUc1UAAQAraHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj1tc3pydjBxQlRzVQEAMGh0dHBzOi8vaS55dGltZy5jb20vdmkvbXN6cnYwcUJUc1UvbXFkZWZhdWx0LmpwZwAAB3lvdXR1YmUAAAAAAAAAAA==", "userData": {}}, "volume": 100, "position": 0, "endTime": null, "paused": false, "filters": {"equalizer": [{"band": 0, "gain": 0.0}, {"band": 1, "gain": 0.0}, {"band": 2, "gain": 0.0}, {"band": 3, "gain": 0.0}, {"band": 4, "gain": 0.0}, {"band": 5, "gain": 0.0}, {"band": 6, "gain": 0.0}, {"band": 7, "gain": 0.0}, {"band": 8, "gain": 0.0}, {"band": 9, "gain": 0.0}, {"band": 10, "gain": 0.0}, {"band": 11, "gain": 0.0}, {"band": 12, "gain": 0.0}, {"band": 13, "gain": 0.0}, {"band": 14, "gain": 0.0}]}}
+2026-08-08T09:59:01.646+02:00  INFO 5528 --- [Lavalink] [XNIO-1 task-3] l.server.io.RequestLoggingFilter         : PATCH /v4/sessions/diaq0qytwi9u9at0/players/686137998177206281?noReplace=False, client=127.0.0.1, payload={"track": {"encoded": "QAAAsgMAG0dvdGhpYyAtLSBPU1QgMDIgJ09sZCBDYW1wJwAJSWxuZXpoYXJhAAAAAAACn+AAC2xqeVJXZ2RDc2w4AAEAK2h0dHBzOi8vd3d3LnlvdXR1YmUuY29tL3dhdGNoP3Y9bGp5UldnZENzbDgBADBodHRwczovL2kueXRpbWcuY29tL3ZpL2xqeVJXZ2RDc2w4L21xZGVmYXVsdC5qcGcAAAd5b3V0dWJlAAAAAAAAAAA=", "userData": {}}, "volume": 100, "position": 0, "endTime": null, "paused": false, "filters": {"equalizer": [{"band": 0, "gain": 0.0}, {"band": 1, "gain": 0.0}, {"band": 2, "gain": 0.0}, {"band": 3, "gain": 0.0}, {"band": 4, "gain": 0.0}, {"band": 5, "gain": 0.0}, {"band": 6, "gain": 0.0}, {"band": 7, "gain": 0.0}, {"band": 8, "gain": 0.0}, {"band": 9, "gain": 0.0}, {"band": 10, "gain": 0.0}, {"band": 11, "gain": 0.0}, {"band": 12, "gain": 0.0}, {"band": 13, "gain": 0.0}, {"band": 14, "gain": 0.0}]}}
