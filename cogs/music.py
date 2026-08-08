@@ -909,18 +909,23 @@ class Music(commands.Cog):
                           query: str,
                           file: str="fantasy_list.txt"):
 
+        # The command now takes everything after it as the title, so quotes are
+        # no longer needed - but plenty of people still type them out of habit,
+        # and they would otherwise end up inside the search query.
+        query = query.strip().strip('"').strip("'").strip()
+
         lines = read_playlist_titles(file)
 
         if query in lines:
             await ctx.send("<@" + str(ctx.author.id) + ">, mam już taki utwór w repertuarze, więc musisz wybrać coś innego.")
             raise DuplicatedTrack
 
-        if len(query.split()) <= 1:
-            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu podaj w cudzysłowie np. *$fantasy \"Wildstar - Drusera's Theme / Our Perception of Beauty\"* .")
-            raise InvalidTrackName
-
+        # There used to be a "one word means you forgot the quotes" check here.
+        # Nothing gets truncated any more, so a single word is simply a short
+        # query, and the length check below is the only guard still needed.
         if len(query) < 10:
-            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu jest za krótki. Spróbuj coś dłuższego.")
+            await ctx.send("<@" + str(ctx.author.id) + "> Tytuł utworu jest za krótki. "
+                           "Podaj wykonawcę i tytuł, żebym trafił we właściwy utwór.")
             raise InvalidTrackName
 
         try:
@@ -1279,7 +1284,7 @@ class Music(commands.Cog):
     @commands.command(name="fantasy")
     @commands.check(is_channel)
     @commands.cooldown(2, 60*60*23, commands.BucketType.user)
-    async def addfantasy_command(self, ctx, query: str):
+    async def addfantasy_command(self, ctx, *, query: str):
         await ctx.message.add_reaction("▶")
 
         check = await self.check_track(ctx, self.player, query, "fantasy_list.txt")
@@ -1296,12 +1301,12 @@ class Music(commands.Cog):
             await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y <:Bedge:970576892874854400>.')
         if isinstance(error, commands.MissingRequiredArgument):
             logger.info("Invoke error.")
-            await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Wpisz $fantasy \"Tytuł utworu\".")
+            await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Wpisz np. *$fantasy Wildstar Drusera's Theme*.")
 
     @commands.command(name="party", aliases=["impreza"])
     @commands.check(is_channel)
     @commands.cooldown(2, 60*60*23, commands.BucketType.user)
-    async def addparty_command(self, ctx, query: str):
+    async def addparty_command(self, ctx, *, query: str):
         await ctx.message.add_reaction("▶")
 
         check = await self.check_track(ctx, self.player, query, "party_list.txt")
@@ -1319,7 +1324,7 @@ class Music(commands.Cog):
             await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60/60, 2)) + ' godzin/y <:Bedge:970576892874854400>.')
         if isinstance(error, commands.MissingRequiredArgument):
             logger.info("Invoke error.")
-            await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Wpisz $party \"Tytuł utworu\".")
+            await ctx.send("<@" + str(ctx.author.id) + "> Coś źle napisałeś. Wpisz np. *$party Akcent Kylie*.")
 
     @commands.command(name="singme", aliases=["zagrajmi"])
     @commands.check(is_channel)
