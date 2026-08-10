@@ -48,6 +48,13 @@ FAILURE_COOLDOWN = 120
 # audio is going nowhere and the voice connection needs rebuilding.
 SILENT_STATS_LIMIT = 3
 
+# Lavalink sends a player update every playerUpdateInterval seconds (see
+# application.yml). This many updates in a row with no forward movement in the
+# track position means playback is stuck - frames.sent alone does not catch
+# this, since Lavalink keeps counting frames as sent even when the voice
+# session is stale and Discord is silently dropping them.
+STUCK_POSITION_LIMIT = 3
+
 # How long to let a closed voice websocket sort itself out before stepping in.
 # Moving between channels closes it too, and that resolves within a second.
 VOICE_GRACE_SECONDS = 15
@@ -431,6 +438,10 @@ class Music(commands.Cog):
         self._votes_restored = False
         # Consecutive Lavalink stat reports with no audio frames sent.
         self._silent_stats = 0
+        # Consecutive player updates with no forward movement in position.
+        self._stuck_position_count = 0
+        self._last_position = None
+        self._last_position_track = None
     # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -810,6 +821,55 @@ class Music(commands.Cog):
         if self._silent_stats >= SILENT_STATS_LIMIT:
             self._silent_stats = 0
             logger.error("The radio has gone silent - rebuilding the voice connection.")
+            await self.reconnect_voice()
+
+    @commands.Cog.listener()
+    async def on_wavelink_player_update(self, payload: wavelink.PlayerUpdateEventPayload):
+        """Catch a track whose position stopped moving.
+
+        Lavalink sends this every playerUpdateInterval seconds per player,
+        much more often than the node-wide stats event, and the position it
+        reports does not lie the way frames.sent does: a stale voice session
+        still gets counted as frames "sent" by Lavalink, but the position of
+        an actually playing track always moves forward.
+        """
+
+        if not self.is_radio_player(payload.player):
+            return
+
+        player = self.player
+        if player is None or not player.playing or player.paused:
+            self._stuck_position_count = 0
+            self._last_position = None
+            self._last_position_track = None
+            return
+
+        current_track = player.current
+        track_id = current_track.identifier if current_track else None
+
+        if track_id != self._last_position_track:
+            # New track (or the first update we have seen) - just record the
+            # baseline, this is not a stuck signal.
+            self._stuck_position_count = 0
+            self._last_position = payload.position
+            self._last_position_track = track_id
+            return
+
+        if payload.connected and payload.position > self._last_position:
+            self._stuck_position_count = 0
+        else:
+            self._stuck_position_count += 1
+            logger.warning(
+                "Track position not advancing (%s/%s): position=%sms connected=%s.",
+                self._stuck_position_count, STUCK_POSITION_LIMIT,
+                payload.position, payload.connected,
+            )
+
+        self._last_position = payload.position
+
+        if self._stuck_position_count >= STUCK_POSITION_LIMIT:
+            self._stuck_position_count = 0
+            logger.error("Track position is stuck - rebuilding the voice connection.")
             await self.reconnect_voice()
 
     async def reconnect_voice(self):
@@ -1424,6 +1484,31 @@ class Music(commands.Cog):
         if isinstance(error, commands.CommandOnCooldown):
             logger.info("Command on cooldown.")
             await ctx.send('Poczekaj na odnowienie komendy! Zostało ' + str(round(error.retry_after/60, 2)) + ' minut <:Bedge:970576892874854400>.')
+
+    @commands.command(name="restartradio", aliases=["wznow", "restartplayer"])
+    @commands.has_permissions(administrator=True)
+    async def restart_radio_command(self, ctx):
+        """Force a fresh voice connection.
+
+        For the failure mode where Lavalink reports connected=True and keeps
+        sending frames, but Discord silently dropped the audio (stale voice
+        session) - nothing in on_wavelink_stats_update catches that, since
+        frames.sent stays > 0. move_to() forces Discord to hand out a new
+        voice session, which is the actual fix; the automatic detectors just
+        weren't wired to call it in this case.
+        """
+
+        if self.player is None:
+            await ctx.send("Radio nie jest uruchomione.")
+            return
+
+        if self._recovery_lock.locked():
+            await ctx.send("Odtwarzanie już jest przywracane, poczekaj chwilę.")
+            return
+
+        await ctx.send("Restartuję połączenie głosowe...")
+        await self.reconnect_voice()
+        await ctx.send("Gotowe.")
 
     @commands.command(name="bardranking", aliases=["rankingbarda"])
     @commands.check(is_channel)

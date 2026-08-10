@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Get-Process python -ErrorAction SilentlyContinue | Select-Object Id,StartTime,CPU\")",
+      "Bash(powershell -Command \"Get-Process java -ErrorAction SilentlyContinue | Select-Object Id,StartTime,CPU\")",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\")"
+    ]
+  }
+}
