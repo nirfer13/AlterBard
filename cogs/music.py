@@ -48,13 +48,6 @@ FAILURE_COOLDOWN = 120
 # audio is going nowhere and the voice connection needs rebuilding.
 SILENT_STATS_LIMIT = 3
 
-# Lavalink sends a player update every playerUpdateInterval seconds (see
-# application.yml). This many updates in a row with no forward movement in the
-# track position means playback is stuck - frames.sent alone does not catch
-# this, since Lavalink keeps counting frames as sent even when the voice
-# session is stale and Discord is silently dropping them.
-STUCK_POSITION_LIMIT = 3
-
 # How long to let a closed voice websocket sort itself out before stepping in.
 # Moving between channels closes it too, and that resolves within a second.
 VOICE_GRACE_SECONDS = 15
@@ -438,10 +431,6 @@ class Music(commands.Cog):
         self._votes_restored = False
         # Consecutive Lavalink stat reports with no audio frames sent.
         self._silent_stats = 0
-        # Consecutive player updates with no forward movement in position.
-        self._stuck_position_count = 0
-        self._last_position = None
-        self._last_position_track = None
     # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -821,55 +810,6 @@ class Music(commands.Cog):
         if self._silent_stats >= SILENT_STATS_LIMIT:
             self._silent_stats = 0
             logger.error("The radio has gone silent - rebuilding the voice connection.")
-            await self.reconnect_voice()
-
-    @commands.Cog.listener()
-    async def on_wavelink_player_update(self, payload: wavelink.PlayerUpdateEventPayload):
-        """Catch a track whose position stopped moving.
-
-        Lavalink sends this every playerUpdateInterval seconds per player,
-        much more often than the node-wide stats event, and the position it
-        reports does not lie the way frames.sent does: a stale voice session
-        still gets counted as frames "sent" by Lavalink, but the position of
-        an actually playing track always moves forward.
-        """
-
-        if not self.is_radio_player(payload.player):
-            return
-
-        player = self.player
-        if player is None or not player.playing or player.paused:
-            self._stuck_position_count = 0
-            self._last_position = None
-            self._last_position_track = None
-            return
-
-        current_track = player.current
-        track_id = current_track.identifier if current_track else None
-
-        if track_id != self._last_position_track:
-            # New track (or the first update we have seen) - just record the
-            # baseline, this is not a stuck signal.
-            self._stuck_position_count = 0
-            self._last_position = payload.position
-            self._last_position_track = track_id
-            return
-
-        if payload.connected and payload.position > self._last_position:
-            self._stuck_position_count = 0
-        else:
-            self._stuck_position_count += 1
-            logger.warning(
-                "Track position not advancing (%s/%s): position=%sms connected=%s.",
-                self._stuck_position_count, STUCK_POSITION_LIMIT,
-                payload.position, payload.connected,
-            )
-
-        self._last_position = payload.position
-
-        if self._stuck_position_count >= STUCK_POSITION_LIMIT:
-            self._stuck_position_count = 0
-            logger.error("Track position is stuck - rebuilding the voice connection.")
             await self.reconnect_voice()
 
     async def reconnect_voice(self):
