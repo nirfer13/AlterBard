@@ -4,6 +4,10 @@ nohup.out
 .venv
 *.pyc
 
+# Holds the YouTube OAuth refresh token for the burner account since
+# 2026-08-15 - a live credential, not something to have in git history.
+application.yml
+
 # Runtime logs, the bot's own and Lavalink's. They are machine-local output:
 # versioning them added thousands of lines per commit and told nobody anything
 # that the file on the machine does not already say.

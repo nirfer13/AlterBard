@@ -594,6 +594,7 @@ class Music(commands.Cog):
         await self.player.stop()
         self.player.queue.reset()
         await self.load_playlist(entries, VoiceChannel)
+        await self.sync_pause_to_occupancy(VoiceChannel)
 
     async def announce(self, channel, message: str):
         """Send a message, treating a missing channel as a warning not a crash.
@@ -666,6 +667,7 @@ class Music(commands.Cog):
         vc: Player = await VoiceChannel.connect(cls=self.player)
 
         added, skipped = await self.load_playlist(entries, VoiceChannel)
+        await self.sync_pause_to_occupancy(VoiceChannel)
         await self.announce(
             LogChannel,
             f"Załadowano {added} utworów z YouTube, pominięto {len(skipped)}.")
@@ -742,9 +744,35 @@ class Music(commands.Cog):
 
         await asyncio.sleep(2)
 
-        if not self.player.playing and not self._recovery_lock.locked():
+        if self.player.playing or self._recovery_lock.locked():
+            return
+
+        if self.player.queue.is_empty:
+            # A burst of failures can drain the whole queue before anything
+            # else reacts - loop_all's history recycling only happens inside
+            # queue.get(), and start_playback never calls that on an empty
+            # queue. Without a reload here the radio stays silent until
+            # someone restarts the process by hand (see 2026-08-12/13).
+            logger.warning("Queue ran dry - reloading the playlist.")
+            await self.refill_queue()
+        else:
             logger.warning("Autoplay did not move on - restarting the radio manually.")
             await self.player.start_playback()
+
+        if self.player.channel:
+            await self.sync_pause_to_occupancy(self.player.channel)
+
+    async def refill_queue(self) -> None:
+        """Reload the current playlist from disk into an empty queue."""
+
+        file = "party_list.txt" if is_party_time() else "fantasy_list.txt"
+        voice_channel = self.bot.get_channel(VoiceChannelID)
+
+        entries = read_playlist_lines(file)
+        random.shuffle(entries)
+
+        await self.load_playlist(entries, voice_channel)
+        await self.sync_pause_to_occupancy(self.player.channel or voice_channel)
 
     @commands.Cog.listener()
     async def on_wavelink_websocket_closed(self, payload: wavelink.WebsocketClosedEventPayload):
@@ -857,6 +885,8 @@ class Music(commands.Cog):
         if not self.player.playing:
             await self.player.start_playback()
 
+        await self.sync_pause_to_occupancy(channel)
+
     def is_radio_player(self, player) -> bool:
         """Whether the event belongs to the radio player, not a one-off $play one."""
 
@@ -918,7 +948,14 @@ class Music(commands.Cog):
 
             self._failed_tracks = 0
             player.autoplay = previous_mode
-            await player.start_playback()
+
+            if player.queue.is_empty:
+                await self.refill_queue()
+            else:
+                await player.start_playback()
+
+            if player.channel:
+                await self.sync_pause_to_occupancy(player.channel)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -937,6 +974,28 @@ class Music(commands.Cog):
 
             logger.info("Changing voice channel automatically.")
             await self.player.move_to(voice_channel)
+            current_voice_channel = voice_channel
+
+        await self.sync_pause_to_occupancy(current_voice_channel)
+
+    async def sync_pause_to_occupancy(self, channel: discord.VoiceChannel) -> None:
+        """Pause the radio once nobody is left to hear it, resume once someone is.
+
+        An empty channel still means a Lavalink request every few minutes for
+        nobody - one more thing feeding the rate-limit/ban-risk problem this
+        bot already has with YouTube. Pausing costs nothing, and the queue
+        picks up exactly where it left off once someone returns.
+        """
+
+        alone = not any(not m.bot for m in channel.members)
+
+        if alone:
+            if self.player.playing and not self.player.paused:
+                logger.info("Channel is empty - pausing.")
+                await self.player.pause(True)
+        elif self.player.paused:
+            logger.info("Someone joined - resuming.")
+            await self.player.pause(False)
 
     async def is_channel(ctx):
         return ctx.channel.id == CommandChannelID or ctx.channel.id == 1057198781206106153
@@ -1408,6 +1467,7 @@ class Music(commands.Cog):
             return await ctx.send('Brak kanału głosowego, do którego mogę dołączyć.')
 
         await self.player.move_to(channel)
+        await self.sync_pause_to_occupancy(channel)
 
     @commands.command(name="next", aliases=["skip", "nastepna"])
     #@commands.cooldown(1, 60*30, commands.BucketType.user)
