@@ -1153,16 +1153,16 @@ class Music(commands.Cog):
             id = str(user.id)
             if id != str(author_id):
                 if id in file_data.keys():
-                    file_data[id] += 0.25
+                    file_data[id] += 1
                 else:
-                    file_data[id] = 0.25
+                    file_data[id] = 1
 
         if success:
             id = str(author_id)
             if id in file_data.keys():
-                file_data[id] += 1
+                file_data[id] += 4
             else:
-                file_data[id] = 1
+                file_data[id] = 4
 
         save_json_atomically(filename, file_data)
 
@@ -1178,14 +1178,14 @@ class Music(commands.Cog):
             if user is None:
                 continue
             if id in file_data.keys() and user.id != 1004008220437778523:
-                if file_data[id] >= 5 and file_data[id] < 20 and role1 not in user.roles:
+                if file_data[id] >= 20 and file_data[id] < 80 and role1 not in user.roles:
                     await user.add_roles(role1)
                     await Channel.send("<@" + str(user.id) + ">! Za wkład w mój muzyczny rozwój otrzymałeś rangę mojego pomagiera! Kto wie, pomagaj mi dalej, a być może czeka Cię nagroda. <:Siur:717731500883181710>")
-                if file_data[id] >= 20 and file_data[id] < 50 and role2 not in user.roles:
+                if file_data[id] >= 80 and file_data[id] < 200 and role2 not in user.roles:
                     await user.remove_roles(role1)
                     await user.add_roles(role2)
                     await Channel.send("<@" + str(user.id) + ">! Widzę,że nie odpuszczasz. W nagrodę dostałeś rangę Młodszego Barda! Może już wystarczy? <:Kermitpls:790963160106008607>")
-                if file_data[id] >= 50 and role3 not in user.roles:
+                if file_data[id] >= 200 and role3 not in user.roles:
                     await user.remove_roles(role2)
                     await user.add_roles(role3)
                     await Channel.send("<@" + str(user.id) + ">! Czekaj... Czy Ty chcesz mnie wygryźć? Dobra, możesz być moim zastępcą, ok? <:MonkaS:882181709100097587> ")
