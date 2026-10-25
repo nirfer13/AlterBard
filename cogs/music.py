@@ -52,6 +52,15 @@ SILENT_STATS_LIMIT = 3
 # Moving between channels closes it too, and that resolves within a second.
 VOICE_GRACE_SECONDS = 15
 
+# How many times to retry a timed-out voice reconnect before giving up. A
+# single attempt used to be it - on 2026-08-18 both the automatic recovery
+# and a manual $restartradio hit the same 10s timeout back to back, and
+# nothing tried again until a human noticed.
+RECONNECT_ATTEMPTS = 3
+
+# How long to wait between reconnect attempts.
+RECONNECT_RETRY_SECONDS = 5
+
 # Names the bot gives its voice channel. Setting a topic as well was dropped:
 # this server's blocked-word filter refused every variant tried, so the feature
 # only produced warnings.
@@ -431,6 +440,11 @@ class Music(commands.Cog):
         self._votes_restored = False
         # Consecutive Lavalink stat reports with no audio frames sent.
         self._silent_stats = 0
+        # Set right before a stop() call we issued ourselves and always
+        # follow up on, so on_wavelink_track_end can tell that apart from an
+        # unsolicited "stopped" - e.g. a resumed track whose cached YouTube
+        # stream URL had expired during a long pause (see 2026-08-18).
+        self._deliberate_stop = False
     # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -591,6 +605,7 @@ class Music(commands.Cog):
                 + str(VoiceChannelID)
                 + "> imprezę <:OOOO:982215120199507979> <a:RainbowPls:882184531917037608>!")
 
+        self._deliberate_stop = True
         await self.player.stop()
         self.player.queue.reset()
         await self.load_playlist(entries, VoiceChannel)
@@ -739,8 +754,21 @@ class Music(commands.Cog):
 
         # Wavelink's autoplay starts the next track. All that is left here is a
         # safety net for the case where the player ends up with nothing playing.
-        if payload.reason in ("replaced", "stopped"):
+        if payload.reason == "replaced":
             return
+
+        if payload.reason == "stopped":
+            if self._deliberate_stop:
+                # We called stop() ourselves and are already handling what
+                # comes next (switch_playlist, the outage cooldown) - the
+                # safety net would only race that.
+                self._deliberate_stop = False
+                return
+            # An unsolicited "stopped" - e.g. resuming a track whose cached
+            # YouTube stream URL expired during a long pause (2026-08-18).
+            # Nobody else is going to move the radio on, so this needs the
+            # same safety net as any other dead end below.
+            logger.warning("Track stopped without us asking - treating it like a failed track.")
 
         await asyncio.sleep(2)
 
@@ -868,17 +896,21 @@ class Music(commands.Cog):
             logger.warning("Cannot reconnect: no channel to return to.")
             return
 
-        logger.info("Reconnecting to %s.", channel)
+        for attempt in range(1, RECONNECT_ATTEMPTS + 1):
+            logger.info("Reconnecting to %s (attempt %s/%s).", channel, attempt, RECONNECT_ATTEMPTS)
 
-        try:
-            # Moving to the same channel makes Discord hand out a fresh voice
-            # session, which wavelink forwards to Lavalink. The player and its
-            # queue survive - a disconnect/connect cycle would destroy the
-            # player and lose everything queued.
-            await self.player.move_to(channel)
-        except (discord.HTTPException, wavelink.WavelinkException) as exc:
-            logger.warning("Voice reconnect failed: %s", exc)
-            return
+            try:
+                # Moving to the same channel makes Discord hand out a fresh
+                # voice session, which wavelink forwards to Lavalink. The
+                # player and its queue survive - a disconnect/connect cycle
+                # would destroy the player and lose everything queued.
+                await self.player.move_to(channel)
+                break
+            except (discord.HTTPException, wavelink.WavelinkException) as exc:
+                logger.warning("Voice reconnect attempt %s/%s failed: %s", attempt, RECONNECT_ATTEMPTS, exc)
+                if attempt == RECONNECT_ATTEMPTS:
+                    return
+                await asyncio.sleep(RECONNECT_RETRY_SECONDS)
 
         await asyncio.sleep(5)
 
@@ -928,6 +960,7 @@ class Music(commands.Cog):
 
             previous_mode = player.autoplay
             player.autoplay = wavelink.AutoPlayMode.disabled
+            self._deliberate_stop = True
             await player.stop(force=True)
 
             LogChannel = self.bot.get_channel(LogChannelID)
