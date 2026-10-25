@@ -5,11 +5,14 @@ import json
 import os
 import random
 import tempfile
+import time
 import typing as t
 
 import discord
 import wavelink
 from discord.ext import commands, tasks
+
+import music_library
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +31,18 @@ GuildID = 686137998177206281
 votesReq = 6
 #votesReq = 2
 
-# Every track comes from YouTube - Lavalink's built-in sources are disabled
-# in application.yml and the youtube-plugin handles search and playback.
-YT_SOURCE = wavelink.TrackSource.YouTube
+# Every track plays from a file in music/ (see music_library.py) - Lavalink's
+# "local" source must be enabled in application.yml. Searching and
+# downloading go through yt-dlp; Lavalink's youtube-plugin is no longer used.
+
+# How long the downloader waits between two downloads. One file per vote is
+# nothing, but an empty library means some 190 in a row, and that burst from
+# one address is what would get it flagged all over again.
+DOWNLOAD_PAUSE_SECONDS = 15
+
+# A failed download is not retried for this long. When YouTube blocks the IP,
+# retrying on every playlist lap would only dig the hole deeper.
+DOWNLOAD_RETRY_HOURS = 6
 
 # Tracks longer than this many minutes never make it into the repertoire.
 MAX_TRACK_MINUTES = 9
@@ -97,14 +109,33 @@ VOTES = {
     "❌": 1
 }
 
-async def search_youtube(query: str) -> wavelink.Search:
-    """Search YouTube for a track.
+async def search_tracks(query: str) -> list:
+    """Search for a track: YouTube first, SoundCloud as the fallback.
 
-    Playable.search detects URLs on its own and skips the search prefix for
-    them, so this one function handles both plain titles and ready links.
+    Handles both plain titles and pasted links. Returns music_library
+    Candidates, which carry the same title/length/uri/artwork as a Playable.
     """
 
-    return await wavelink.Playable.search(query.strip("<>"), source=YT_SOURCE)
+    return await asyncio.to_thread(music_library.search, query.strip("<>"))
+
+async def load_local_track(path, title: str, url: str = None) -> wavelink.Playable:
+    """Have Lavalink load a downloaded file, labelled with its playlist title."""
+
+    tracks = await wavelink.Pool.fetch_tracks(str(path))
+
+    if not tracks or isinstance(tracks, wavelink.Playlist):
+        raise NoTracksFound
+
+    track = tracks[0]
+    # Lavalink knows a bare file only as "Unknown title". Extras are sent to
+    # Lavalink as userData and come back with every event about the track.
+    track.extras = {"title": title, "url": url or ""}
+    return track
+
+def track_title(track: wavelink.Playable) -> str:
+    """The title to show for a track - the playlist's, when it has one."""
+
+    return getattr(track.extras, "title", None) or track.title
 
 def local_now() -> dt.datetime:
     """Local wall-clock time.
@@ -177,8 +208,28 @@ def load_pending_votes() -> list:
         logger.warning("Could not read %s: %s", PENDING_VOTES_FILE, exc)
         return []
 
-def save_json_atomically(path: str, data) -> None:
-    """Write JSON so that an interrupted write cannot destroy the old file.
+def replace_entry_url(file: str, title: str, old_url: str, new_url: str) -> bool:
+    """Pin new_url to the playlist entry (title, old_url).
+
+    Used when the downloader had to find a track by title: the entry had no
+    link yet, or its upload was taken down. Every other line is left exactly
+    as it was, line endings included.
+    """
+
+    with open(file, encoding="utf8", newline="") as handle:
+        lines = handle.read().splitlines(keepends=True)
+
+    for index, line in enumerate(lines):
+        if line.strip() and parse_playlist_entry(line) == (title, old_url):
+            ending = line[len(line.rstrip("\r\n")):]
+            lines[index] = format_entry(title, new_url) + ending
+            write_atomically(file, lambda handle: handle.write("".join(lines)), newline="")
+            return True
+
+    return False
+
+def write_atomically(path: str, write, newline: str = None) -> None:
+    """Write a file so that an interrupted write cannot destroy the old one.
 
     Writing straight into the target truncates it first, so a crash or a power
     cut mid-write leaves it empty or half-written. authors_list.json holds the
@@ -188,11 +239,11 @@ def save_json_atomically(path: str, data) -> None:
 
     directory = os.path.dirname(os.path.abspath(path)) or "."
 
-    with tempfile.NamedTemporaryFile("w", encoding="utf8", dir=directory,
+    with tempfile.NamedTemporaryFile("w", encoding="utf8", dir=directory, newline=newline,
                                      delete=False, suffix=".tmp") as handle:
         temporary = handle.name
         try:
-            json.dump(data, handle, indent=4, ensure_ascii=False)
+            write(handle)
             handle.flush()
             os.fsync(handle.fileno())
         except BaseException:
@@ -203,6 +254,9 @@ def save_json_atomically(path: str, data) -> None:
             raise
 
     os.replace(temporary, path)
+
+def save_json_atomically(path: str, data) -> None:
+    write_atomically(path, lambda handle: json.dump(data, handle, indent=4, ensure_ascii=False))
 
 def save_pending_votes(records: list) -> None:
     save_json_atomically(PENDING_VOTES_FILE, records)
@@ -355,7 +409,7 @@ class Player(wavelink.Player):
             return
 
         track = self.queue.get()
-        logger.info("Now playing: %s", track)
+        logger.info("Now playing: %s", track_title(track))
         await self.play(track)
 
     async def get_track(self, ctx, tracks, file: str="fantasy_list.txt") -> wavelink.Playable:
@@ -445,6 +499,14 @@ class Music(commands.Cog):
         # unsolicited "stopped" - e.g. a resumed track whose cached YouTube
         # stream URL had expired during a long pause (see 2026-08-18).
         self._deliberate_stop = False
+        # Missing files, fetched one at a time by download_worker. The set
+        # keeps a track that is already waiting from being queued again by
+        # the next playlist load.
+        self._download_queue = asyncio.Queue()
+        self._download_jobs = set()
+        self._download_task = None
+        # When each failing entry last failed (time.monotonic()).
+        self._download_failures = {}
     # self.bot.loop.create_task(self.start_nodes())
 
     @commands.Cog.listener()
@@ -461,55 +523,127 @@ class Music(commands.Cog):
         await self.restore_pending_votes()
         await self.setup_hook()
 
-    async def load_playlist(self, playlist: list, voice_channel: discord.VoiceChannel):
-        """Search YouTube for every playlist entry and queue it.
+    async def load_playlist(self, file: str, voice_channel: discord.VoiceChannel):
+        """Queue every playlist entry that has a file in the library.
 
-        Returns (number of tracks added, list of skipped queries).
+        Entries without one go to the downloader, which adds each to the queue
+        once it arrives - so a missing file costs one lap, not the radio.
+        Re-reads the file every time: anything voted in during the week would
+        otherwise be missing until the next restart.
+
+        Returns (tracks added, list of skipped titles, number sent to download).
         """
 
         added = 0
         skipped = []
+        missing = 0
+
+        entries = read_playlist_entries(file)
+        random.shuffle(entries)
 
         # queue.reset() on a playlist switch puts the queue mode back to
         # "normal". Without restoring loop_all the radio would play the
         # playlist once and fall silent, as the queue never returns from history.
         self.player.queue.mode = wavelink.QueueMode.loop_all
 
-        for line in playlist:
-            line = str(line).strip()
-            if not line:
+        for title, url in entries:
+            path = music_library.find_local(url) if url else None
+            if path is None:
+                self.request_download(title, url, file)
+                missing += 1
                 continue
-
-            title, url = parse_playlist_entry(line)
 
             if not self.player.connected:
                 await voice_channel.connect(cls=self.player)
 
             try:
-                await self.queue_entry(title, url)
+                await self.player.add_singletrack([await load_local_track(path, title, url)])
                 added += 1
 
                 # Start once, on the first track that made it into the queue.
                 # Everything after that is autoplay's job.
                 if added == 1 and not self.player.playing:
                     await self.player.start_playback()
-            except NoTracksFound:
-                # YouTube returned nothing - e.g. the video was taken down.
-                logger.warning("No results for: %s", title)
-                skipped.append(title)
-            except LongTrack:
-                logger.warning("All results too long (>%s min): %s", MAX_TRACK_MINUTES, title)
-                skipped.append(title)
-            except wavelink.WavelinkException as exc:
-                # A Lavalink/YouTube side error - it must not block the rest.
-                logger.warning("Lavalink could not handle '%s': %s", title, exc, exc_info=True)
+            except (NoTracksFound, LongTrack, wavelink.WavelinkException) as exc:
+                # A file Lavalink cannot read, or one over the length limit -
+                # either way it must not block the rest.
+                logger.warning("Could not queue '%s' (%s): %r", title, path.name, exc)
                 skipped.append(title)
 
-        logger.info("Loaded %s tracks, skipped %s.", added, len(skipped))
+        logger.info("Loaded %s tracks, skipped %s, %s waiting for a download.",
+                    added, len(skipped), missing)
         if skipped:
             logger.info("Skipped: %s", " | ".join(skipped[:10]))
 
-        return added, skipped
+        return added, skipped, missing
+
+    def request_download(self, title: str, url: str, file: str) -> None:
+        """Queue a playlist entry for the background downloader."""
+
+        key = url or title
+        if key in self._download_jobs:
+            return
+
+        failed_at = self._download_failures.get(key)
+        if failed_at is not None and time.monotonic() - failed_at < DOWNLOAD_RETRY_HOURS * 3600:
+            return
+
+        self._download_jobs.add(key)
+        self._download_queue.put_nowait((title, url, file))
+
+        if self._download_task is None or self._download_task.done():
+            self._download_task = self.bot.loop.create_task(self.download_worker())
+
+    async def download_worker(self) -> None:
+        """Download queued entries one at a time, pausing between them.
+
+        Runs as a detached task, so every job is guarded - an exception would
+        otherwise end the downloads silently. Exits when the queue is empty;
+        request_download starts it again.
+        """
+
+        while not self._download_queue.empty():
+            title, url, file = await self._download_queue.get()
+            key = url or title
+
+            try:
+                await self.fetch_entry(title, url, file)
+                self._download_failures.pop(key, None)
+            except (music_library.LibraryError, LongTrack) as exc:
+                self._download_failures[key] = time.monotonic()
+                logger.warning("Download of '%s' failed, next try in %sh: %s",
+                               title, DOWNLOAD_RETRY_HOURS, exc)
+            except Exception:
+                self._download_failures[key] = time.monotonic()
+                logger.exception("Download of '%s' failed.", title)
+            finally:
+                self._download_jobs.discard(key)
+
+            await asyncio.sleep(DOWNLOAD_PAUSE_SECONDS)
+
+    async def fetch_entry(self, title: str, url: str, file: str) -> None:
+        """Download one entry and, if its playlist is on air, queue it."""
+
+        path, final_url = await asyncio.to_thread(music_library.fetch, title, url)
+        logger.info("Downloaded '%s' as %s.", title, path.name)
+
+        if final_url != url:
+            # Pinned so the title search is not repeated on every load.
+            replace_entry_url(file, title, url, final_url)
+            logger.info("Pinned '%s' to %s in %s.", title, final_url, file)
+
+        if self.player is None or not self.playlist_is_live(file):
+            return
+
+        await self.player.add_singletrack([await load_local_track(path, title, final_url)])
+
+        # The very first file of an empty library: nothing is playing yet,
+        # and nothing else would start it.
+        if (not self.player.playing and self.player.connected
+                and not self._recovery_lock.locked()):
+            await self.player.start_playback()
+            if self.player.channel:
+                await self.sync_pause_to_occupancy(self.player.channel)
 
     async def set_channel_look(self, channel: discord.VoiceChannel, name: str):
         """Rename the voice channel without ever failing the caller.
@@ -524,26 +658,6 @@ class Music(commands.Cog):
             await channel.edit(name=name)
         except discord.HTTPException as exc:
             logger.warning("Could not set the channel name: %s", exc)
-
-    async def queue_entry(self, title: str, url: str = None):
-        """Queue one playlist entry, preferring its pinned URL.
-
-        The fallback to a title search is what keeps the radio from losing a
-        track permanently: a pinned video can be taken down, made private or
-        geo-blocked, and then only a fresh search will find another upload.
-        """
-
-        if url:
-            try:
-                await self.player.add_singletrack(await search_youtube(url))
-                return
-            except (NoTracksFound, LongTrack, wavelink.WavelinkException) as exc:
-                logger.warning(
-                    "Pinned link failed for '%s' (%s): %s - falling back to a search.",
-                    title, url, exc
-                )
-
-        await self.player.add_singletrack(await search_youtube(title))
 
     async def playlist_scheduler(self):
         """Swap between the fantasy and party playlists on schedule.
@@ -584,12 +698,6 @@ class Music(commands.Cog):
 
         file = "party_list.txt" if to_party else "fantasy_list.txt"
 
-        # Re-read from disk rather than reuse the lists loaded at startup:
-        # anything voted in during the week would otherwise be missing until
-        # the next restart.
-        entries = read_playlist_lines(file)
-        random.shuffle(entries)
-
         await self.set_channel_look(
             VoiceChannel,
             CHANNEL_NAME_PARTY_SWITCH if to_party else CHANNEL_NAME_FANTASY)
@@ -608,7 +716,7 @@ class Music(commands.Cog):
         self._deliberate_stop = True
         await self.player.stop()
         self.player.queue.reset()
-        await self.load_playlist(entries, VoiceChannel)
+        await self.load_playlist(file, VoiceChannel)
         await self.sync_pause_to_occupancy(VoiceChannel)
 
     async def announce(self, channel, message: str):
@@ -665,34 +773,37 @@ class Music(commands.Cog):
         party_on = is_party_time()
 
         if party_on:
-            entries = read_playlist_lines("party_list.txt")
+            file = "party_list.txt"
             await self.set_channel_look(VoiceChannel, CHANNEL_NAME_PARTY)
             await self.announce(LogChannel, "Zmiana playlisty na imprezową.")
             await self.set_bot_nick(guild, "DJ Stachu")
         else:
-            entries = read_playlist_lines("fantasy_list.txt")
+            file = "fantasy_list.txt"
             await self.set_channel_look(VoiceChannel, CHANNEL_NAME_FANTASY)
             await self.announce(LogChannel, "Zmiana playlisty na fantasy.")
             await self.set_bot_nick(guild, "Bard Stasiek")
-
-        random.shuffle(entries)
 
         await self.announce(LogChannel, "Bard gotowy do śpiewania!")
         self.player = Player(bot=self.bot)
         vc: Player = await VoiceChannel.connect(cls=self.player)
 
-        added, skipped = await self.load_playlist(entries, VoiceChannel)
+        added, skipped, missing = await self.load_playlist(file, VoiceChannel)
         await self.sync_pause_to_occupancy(VoiceChannel)
         await self.announce(
             LogChannel,
-            f"Załadowano {added} utworów z YouTube, pominięto {len(skipped)}.")
+            f"Załadowano {added} utworów z biblioteki, pominięto {len(skipped)}, "
+            f"{missing} pobieram w tle.")
 
-        if not added:
+        if not added and missing:
             await self.announce(
                 LogChannel,
-                "Nie udało się załadować **żadnego** utworu z YouTube. "
-                "Sprawdź logi Lavalinka - najczęściej oznacza to przeterminowany "
-                "youtube-plugin."
+                "Biblioteka jest pusta - pobieram utwory w tle, radio ruszy po pierwszym."
+            )
+        elif not added:
+            await self.announce(
+                LogChannel,
+                "Nie udało się załadować **żadnego** utworu z biblioteki. "
+                "Sprawdź logi Lavalinka - czy w application.yml jest `local: true`?"
             )
 
         # Watches the clock and swaps the playlist at the scheduled time.
@@ -700,20 +811,37 @@ class Music(commands.Cog):
 
     @commands.command("play")
     async def play(self, ctx: commands.Context, *, search: str) -> None:
-        """Simple play command."""
+        """Simple play command.
+
+        Downloads the track first like everything else: streaming it straight
+        from YouTube is the very thing that keeps getting blocked.
+        """
 
         if not ctx.voice_client:
             vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
         else:
             vc: wavelink.Player = ctx.voice_client
 
-        tracks: wavelink.Search = await search_youtube(search)
-        if not tracks:
+        try:
+            candidates = await search_tracks(search)
+        except music_library.SearchFailed as exc:
+            logger.warning("Search for '%s' failed: %s", search, exc)
+            candidates = []
+
+        if not candidates:
             await ctx.send(f'Przepraszam, nie mogę znaleźć podanego utworu: `{search}`')
             return
 
-        logger.debug("Found track: %s", tracks[0])
-        track: wavelink.Playable = tracks[0]
+        candidate = candidates[0]
+        logger.debug("Found track: %s (%s)", candidate.title, candidate.uri)
+
+        try:
+            path = await asyncio.to_thread(music_library.download, candidate.uri)
+            track = await load_local_track(path, candidate.title, candidate.uri)
+        except (music_library.DownloadFailed, NoTracksFound, wavelink.WavelinkException) as exc:
+            logger.warning("Could not get '%s': %s", candidate.uri, exc)
+            await ctx.send(f'Przepraszam, nie udało mi się pobrać utworu: `{candidate.title}`')
+            return
 
         await vc.play(track)
         logger.info("Playing song...")
@@ -731,10 +859,11 @@ class Music(commands.Cog):
         # every single track.
         player = payload.player or self.player
         left = len(player.queue) if player else 0
-        logger.info("Now playing: %s | queued: %s", payload.track.title, left)
+        title = track_title(payload.original or payload.track)
+        logger.info("Now playing: %s | queued: %s", title, left)
 
         try:
-            activity = discord.CustomActivity(f"Odgrywa: {payload.track.title}")
+            activity = discord.CustomActivity(f"Odgrywa: {title}")
             await self.bot.change_presence(status=discord.Status.do_not_disturb,
                                         activity=activity)
         except (discord.DiscordException, ConnectionError) as exc:
@@ -796,10 +925,7 @@ class Music(commands.Cog):
         file = "party_list.txt" if is_party_time() else "fantasy_list.txt"
         voice_channel = self.bot.get_channel(VoiceChannelID)
 
-        entries = read_playlist_lines(file)
-        random.shuffle(entries)
-
-        await self.load_playlist(entries, voice_channel)
+        await self.load_playlist(file, voice_channel)
         await self.sync_pause_to_occupancy(self.player.channel or voice_channel)
 
     @commands.Cog.listener()
@@ -941,14 +1067,15 @@ class Music(commands.Cog):
     async def handle_track_failure(self, track: wavelink.Playable, reason: str) -> None:
         """React to a track that could not be played.
 
-        A single miss (a taken-down video) is normal - autoplay simply moves
-        on. Several in a row mean a YouTube outage: without a pause autoplay
-        burns through the whole queue in seconds, and after three errors
-        wavelink disables autoplay for good and the radio goes quiet.
+        A single miss (a damaged file) is normal - autoplay simply moves on.
+        Several in a row mean something is wrong with Lavalink itself: without
+        a pause autoplay burns through the whole queue in seconds, and after
+        three errors wavelink disables autoplay for good and the radio goes quiet.
         """
 
         self._failed_tracks += 1
-        logger.error("Playback error on '%s': %s (consecutive: %s)", track, reason, self._failed_tracks)
+        logger.error("Playback error on '%s': %s (consecutive: %s)",
+                     track_title(track) if track else None, reason, self._failed_tracks)
 
         if self._failed_tracks < FAILURE_THRESHOLD or self._recovery_lock.locked():
             return
@@ -968,7 +1095,8 @@ class Music(commands.Cog):
                 await LogChannel.send(
                     f"{self._failed_tracks} utworów z rzędu nie dało się odtworzyć "
                     f"(ostatni błąd: `{reason[:200]}`). Milknę na {FAILURE_COOLDOWN}s. "
-                    "Jeśli to się powtarza, sprawdź wersję youtube-plugin w application.yml."
+                    "Utwory grają z plików lokalnych, więc jeśli to się powtarza, "
+                    "sprawdź logi Lavalinka."
                 )
 
             await asyncio.sleep(FAILURE_COOLDOWN)
@@ -1084,10 +1212,11 @@ class Music(commands.Cog):
             raise InvalidTrackName
 
         try:
-            tracks: wavelink.Search = await search_youtube(query)
-        except wavelink.WavelinkException as exc:
-            logger.warning("Search for '%s' failed: %s", query, exc, exc_info=True)
-            await ctx.send("Nie udało mi się teraz zapytać YouTube'a. Spróbuj za chwilę.")
+            tracks = await search_tracks(query)
+        except music_library.SearchFailed as exc:
+            logger.warning("Search for '%s' failed: %s", query, exc)
+            await ctx.send("Nie udało mi się teraz zapytać ani YouTube'a, ani SoundClouda. "
+                           "Spróbuj za chwilę.")
             raise NoTracksFound
 
         track = await self.player.get_track(ctx, tracks, file)
@@ -1420,15 +1549,10 @@ class Music(commands.Cog):
             "Utwór " + record["title"] + " dopisany do repertuaru "
             + record.get("playlist", "") + " <a:PepoG:936907752155021342>.")
 
-        # Only drop it into the queue if that playlist is the one on air right
-        # now - the day may well have changed while the vote was running.
-        if self.player is not None and self.playlist_is_live(record["file"]):
-            try:
-                tracks = await search_youtube(record.get("uri") or record["title"])
-                if tracks:
-                    self.player.queue.put(tracks[0])
-            except wavelink.WavelinkException as exc:
-                logger.warning("Could not queue the accepted track: %s", exc)
+        # Downloaded in the background. The downloader only drops it into the
+        # queue if that playlist is the one on air by then - the day may well
+        # have changed while the vote was running.
+        self.request_download(record["title"], record.get("uri"), record["file"])
 
     async def delete_quietly(self, message: discord.Message) -> None:
         try:
@@ -1570,12 +1694,12 @@ class Music(commands.Cog):
         embed.set_footer(text=f"{ctx.author.display_name}", icon_url=ctx.author.avatar)
         current = self.player.current
         embed.add_field(name="Aktualnie gra",
-                        value=current.title if current else "nic",
+                        value=track_title(current) if current else "nic",
                         inline=False)
 
         # The queue is iterable - titles used to be pulled out by slicing the
         # queue's repr(), which fell apart on titles containing quotes.
-        if upcoming := [track.title for track in self.player.queue][:show]:
+        if upcoming := [track_title(track) for track in self.player.queue][:show]:
             embed.add_field(
                 name="Następny",
                 value="\n".join(upcoming),
