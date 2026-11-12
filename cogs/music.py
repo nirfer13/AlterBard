@@ -516,6 +516,7 @@ class Music(commands.Cog):
         # on_ready fires again after every reconnect, and restarting the
         # watchers each time would count the same vote several times over.
         if self._votes_restored:
+            await self.restore_radio()
             return
         self._votes_restored = True
 
@@ -784,11 +785,7 @@ class Music(commands.Cog):
             await self.set_bot_nick(guild, "Bard Stasiek")
 
         await self.announce(LogChannel, "Bard gotowy do śpiewania!")
-        self.player = Player(bot=self.bot)
-        vc: Player = await VoiceChannel.connect(cls=self.player)
-
-        added, skipped, missing = await self.load_playlist(file, VoiceChannel)
-        await self.sync_pause_to_occupancy(VoiceChannel)
+        added, skipped, missing = await self.start_radio(VoiceChannel, file)
         await self.announce(
             LogChannel,
             f"Załadowano {added} utworów z biblioteki, pominięto {len(skipped)}, "
@@ -808,6 +805,58 @@ class Music(commands.Cog):
 
         # Watches the clock and swaps the playlist at the scheduled time.
         self.task = self.bot.loop.create_task(self.playlist_scheduler())
+
+    async def start_radio(self, channel: discord.VoiceChannel, file: str):
+        """Create the radio player, join the channel and load the playlist."""
+
+        self.player = Player(bot=self.bot)
+        await channel.connect(cls=self.player)
+
+        result = await self.load_playlist(file, channel)
+        await self.sync_pause_to_occupancy(channel)
+        return result
+
+    async def restore_radio(self) -> None:
+        """Rebuild the radio after Discord replaced the gateway session.
+
+        A READY after the first one means a brand new session - a resumed
+        one gets RESUMED instead - and on a new session discord.py forgets
+        every voice client (ConnectionState.clear). The player keeps its
+        queue but no longer hears about voice updates, so Lavalink stays on
+        the dead session. On 2026-11-12 a network blip at 01:33 did exactly
+        that and the radio stayed mute until restarted by hand. Nothing else
+        noticed: the player was paused in an empty channel, so the silence
+        detector had nothing to measure, and Lavalink sent no websocket close.
+        """
+
+        guild = self.bot.get_guild(GuildID)
+        if self.player is None or guild is None or guild.voice_client is self.player:
+            return
+
+        async with self._recovery_lock:
+            logger.warning("New Discord session dropped the radio's voice connection - rebuilding it.")
+
+            try:
+                # Drops the player Lavalink still keeps on the dead session.
+                await self.player.teardown()
+            except Exception as exc:
+                logger.warning("Could not destroy the old player: %r", exc)
+
+            # Fresh objects: the clear() also replaced every cached guild and
+            # channel, so the old player's channel is a stale copy.
+            channel = self.bot.get_channel(VoiceChannelID)
+            file = "party_list.txt" if is_party_time() else "fantasy_list.txt"
+
+            try:
+                added, _, _ = await self.start_radio(channel, file)
+            except (discord.DiscordException, wavelink.WavelinkException, asyncio.TimeoutError):
+                logger.exception("Rebuilding the radio failed.")
+                await self.announce(self.bot.get_channel(LogChannelID),
+                                    "Po zerwaniu połączenia z Discordem nie udało mi się "
+                                    "wrócić na kanał. Trzeba zrestartować bota.")
+                return
+
+            logger.info("Radio rebuilt after a new Discord session, %s tracks queued.", added)
 
     @commands.command("play")
     async def play(self, ctx: commands.Context, *, search: str) -> None:
